@@ -1,0 +1,24 @@
+{
+    "search": {
+        "title": "Rechercher un joueur",
+        "gameNameLabel": "Nom de jeu",
+        "gameNamePlaceholder": "Faker",
+        "tagLineLabel": "Tag",
+        "tagLinePlaceholder": "KR1",
+        "regionLabel": "Région",
+        "submit": "Rechercher"
+    },
+    "profile": {
+        "level": "Niveau {{level, number}}",
+        "updatedAt": "Mis à jour le {{when, datetime}}",
+        "loading": "Recherche du joueur…"
+    },
+    "errors": {
+        "invalidRiotId": "Ce Riot ID n'est pas valide.",
+        "notFound": "Aucun joueur avec ce Riot ID sur cette région.",
+        "rateLimited": "Riot limite nos appels. Réessaie dans un instant.",
+        "keyRejected": "Riot a refusé la clé d'API du serveur.",
+        "riotUnavailable": "Riot est injoignable pour le moment. Réessaie dans un instant.",
+        "unknown": "Une erreur est survenue. Réessaie."
+    }
+}

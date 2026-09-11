@@ -1,0 +1,148 @@
+name: CI
+
+on:
+    pull_request:
+        branches: [develop, release, main]
+    push:
+        branches: [develop, release, main]
+
+# The default token is read-only for the whole organisation. Only the tag job needs
+# more, and it asks for it on its own.
+permissions:
+    contents: read
+
+concurrency:
+    # A new push to a pull request makes the previous run pointless, so runs of one pull
+    # request share a group and cancel each other. A push to a permanent branch gets a
+    # group of its own — branch and commit: GitHub also cancels *pending* runs within a
+    # group, every such push is a commit to verify, and on release a version to tag. The
+    # branch matters too: one commit can reach develop, release and main at once.
+    group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pull-request' || github.sha }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    verify:
+        name: Verify
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:17-alpine
+                env:
+                    POSTGRES_USER: lynf
+                    POSTGRES_PASSWORD: lynf
+                    POSTGRES_DB: lynf_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U lynf -d lynf_test"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  # The whole history: the pull request checks read every commit it brings.
+                  fetch-depth: 0
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+
+            # Local hooks can be skipped, and commits made on GitHub never run them. Direct
+            # pushes are checked too: urgent fixes land on release without a pull request.
+            - name: No Riot API key in the new commits
+              run: |
+                  if [ "$EVENT" = pull_request ]; then
+                      RANGE="origin/$BASE_REF..HEAD"
+                  elif git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+                      RANGE="$BEFORE..$GITHUB_SHA"
+                  else
+                      # A new branch, or a history rewritten by a force push: the previous
+                      # commit is unknown, so everything the branch holds is checked.
+                      RANGE="$GITHUB_SHA"
+                  fi
+
+                  sh scripts/check-riot-key.sh "$RANGE"
+              env:
+                  EVENT: ${{ github.event_name }}
+                  BASE_REF: ${{ github.base_ref }}
+                  BEFORE: ${{ github.event.before }}
+
+            - name: Install
+              run: pnpm install --frozen-lockfile
+
+            # Dependabot writes its own commit messages, outside our conventions.
+            - name: Commit messages
+              if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+              run: pnpm exec commitlint --from "origin/$BASE_REF" --to HEAD --verbose
+              env:
+                  BASE_REF: ${{ github.base_ref }}
+
+            - name: Formatting
+              run: pnpm format:check
+
+            - name: Lint
+              run: pnpm lint
+
+            - name: Types
+              run: pnpm typecheck
+
+            - name: Translation parity
+              run: pnpm i18n:check
+
+            - name: Apply migrations to the test database
+              run: pnpm --filter "@lynf/backend" db:migrate
+              env:
+                  DATABASE_URL: postgres://lynf:lynf@localhost:5432/lynf_test
+
+            - name: Tests
+              run: pnpm test:cov
+              env:
+                  DATABASE_TEST_URL: postgres://lynf:lynf@localhost:5432/lynf_test
+
+            - name: Build
+              run: pnpm build
+
+    tag:
+        name: Tag the release
+        # Only a verified commit gets a version: a red release is never tagged.
+        needs: verify
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+        runs-on: ubuntu-latest
+
+        # The only job allowed to write to the repository, and only because it must
+        # create a tag.
+        permissions:
+            contents: write
+
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  # Existing tags are needed to refuse moving one.
+                  fetch-depth: 0
+
+            - name: Create the tag
+              run: |
+                  VERSION="v$(node -p "require('./package.json').version")"
+
+                  # The version comes from a reviewed file, but it ends up in commands run
+                  # with write access: accept nothing but MAJOR.MINOR.PATCH.
+                  if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                      echo "::error::'$VERSION' is not a MAJOR.MINOR.PATCH version."
+                      exit 1
+                  fi
+
+                  if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+                      echo "::error::$VERSION already exists. Bump the version in package.json before promoting."
+                      exit 1
+                  fi
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git tag -a "$VERSION" -m "Release $VERSION"
+                  git push origin "$VERSION"

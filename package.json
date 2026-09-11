@@ -1,0 +1,45 @@
+{
+    "name": "lynf",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@12.3.4",
+    "engines": {
+        "node": ">=22.13"
+    },
+    "scripts": {
+        "dev": "pnpm --filter \"@lynf/shared\" build && pnpm --parallel --filter \"@lynf/shared\" --filter \"@lynf/backend\" --filter \"@lynf/frontend\" dev",
+        "build": "pnpm -r --if-present build",
+        "typecheck": "pnpm -r --if-present typecheck",
+        "test": "pnpm --filter \"@lynf/backend\" test",
+        "test:cov": "pnpm --filter \"@lynf/backend\" test:cov",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "i18n:check": "node scripts/check-translation-parity.mjs",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^20.1.0",
+        "@commitlint/config-conventional": "^20.1.0",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.10.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-unicorn": "^74.0.0",
+        "globals": "^17.12.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.6",
+        "prettier": "^3.6.2",
+        "typescript": "~6.0.3",
+        "typescript-eslint": "^8.70.0"
+    },
+    "lint-staged": {
+        "*.{ts,tsx,js,mjs,cjs}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md,yaml,yml,css,html}": [
+            "prettier --write"
+        ]
+    },
+    "version": "0.1.0"
+}

@@ -1,0 +1,28 @@
+# Only Postgres runs in Docker. The applications run on the host so that hot
+# reload stays immediate and errors surface in your own terminal.
+
+# Fixed, rather than taken from the folder name: `docker compose` commands then find
+# this container from any clone, whatever its folder is called.
+name: lynf
+
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: lynf-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: lynf
+            POSTGRES_PASSWORD: lynf
+            POSTGRES_DB: lynf
+        ports:
+            - '5432:5432'
+        volumes:
+            - lynf-postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U lynf -d lynf']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+volumes:
+    lynf-postgres-data:

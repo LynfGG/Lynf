@@ -1,0 +1,24 @@
+{
+    "search": {
+        "title": "Look up a player",
+        "gameNameLabel": "Game name",
+        "gameNamePlaceholder": "Faker",
+        "tagLineLabel": "Tag",
+        "tagLinePlaceholder": "KR1",
+        "regionLabel": "Region",
+        "submit": "Search"
+    },
+    "profile": {
+        "level": "Level {{level, number}}",
+        "updatedAt": "Updated {{when, datetime}}",
+        "loading": "Looking this player up…"
+    },
+    "errors": {
+        "invalidRiotId": "That is not a valid Riot ID.",
+        "notFound": "No player by that Riot ID on this region.",
+        "rateLimited": "Riot is rate limiting us. Try again in a moment.",
+        "keyRejected": "Riot rejected the server's API key.",
+        "riotUnavailable": "Riot cannot be reached right now. Try again in a moment.",
+        "unknown": "Something went wrong. Try again."
+    }
+}

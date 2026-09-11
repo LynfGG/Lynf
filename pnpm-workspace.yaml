@@ -1,0 +1,21 @@
+packages:
+    - 'apps/*'
+    - 'packages/*'
+
+# Install scripts, allowed one package at a time rather than all at once.
+# @scarf/scarf is explicitly refused: it is telemetry.
+allowBuilds:
+    '@parcel/watcher': true
+    '@scarf/scarf': false
+    esbuild: true
+    unrs-resolver: true
+
+# Patched versions forced onto indirect dependencies that cannot be upgraded directly.
+# Remove each one as soon as its parent package ships the patched version itself.
+overrides:
+    # @nestjs/platform-express pins multer to 2.2.0, even in 12.0.1.
+    # GHSA-wc9g-mqfw-jrwm, GHSA-qfvm-cv95-jqjf, GHSA-535w-7cp7-47q4, GHSA-qvfw-j98x-7q72.
+    multer: 2.3.0
+    # drizzle-kit goes through @esbuild-kit/core-utils, deprecated (merged into tsx), which
+    # pins esbuild to ~0.18.20. GHSA-67mh-4wv8-2f99.
+    '@esbuild-kit/core-utils>esbuild': ^0.25.0

@@ -1,0 +1,2 @@
+sh scripts/check-riot-key.sh
+pnpm exec lint-staged
