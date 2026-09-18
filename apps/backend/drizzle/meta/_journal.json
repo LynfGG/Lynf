@@ -29,6 +29,13 @@
             "when": 1789773775362,
             "tag": "0003_flashy_harpoon",
             "breakpoints": true
+        },
+        {
+            "idx": 4,
+            "version": "7",
+            "when": 1789775270286,
+            "tag": "0004_colossal_beast",
+            "breakpoints": true
         }
     ]
 }
