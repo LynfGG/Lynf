@@ -1,6 +1,6 @@
 import type { EPlatformRegion, RiotIdLookup, SummonerRank } from '@lynf/shared';
 import { ERankedQueue, RANKED_QUEUES } from '@lynf/shared';
-import { HttpException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
@@ -9,6 +9,7 @@ import { RiotExternal } from '../../riot/externals/riot.external';
 import type { RiotLeagueEntryResponse } from '../../riot/types/riot-responses';
 import { SummonerRankRepository } from '../repositories/summoner-rank.repository';
 import { SummonerRepository } from '../repositories/summoner.repository';
+import { withFreshnessFallback } from '../utils/riot-freshness.utils';
 import { SummonerService } from './summoner.service';
 
 const SHOWN_QUEUES: readonly string[] = RANKED_QUEUES;
@@ -40,41 +41,31 @@ export class SummonerRankService {
 
         const readAt = await this.summonerRankRepository.findReadAt(puuid, region);
 
-        if (readAt && this.isFresh(readAt)) {
-            const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
-            return sortByQueue(stored.map(toRank));
-        }
+        return withFreshnessFallback({
+            fallback: readAt ?? undefined,
+            isFresh: (at) => this.isFresh(at),
+            serveStored: async () => {
+                const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
+                return sortByQueue(stored.map(toRank));
+            },
+            refresh: async () => {
+                const entries = await this.riotExternal.getLeagueEntriesByPuuid(puuid, region);
+                const rows = entries.filter(isShown).map((entry) => toRow(entry, puuid, region));
+                const saved = await this.summonerRankRepository.replaceAll(
+                    puuid,
+                    region,
+                    rows,
+                    new Date(),
+                );
 
-        try {
-            const entries = await this.riotExternal.getLeagueEntriesByPuuid(puuid, region);
-            const rows = entries.filter(isShown).map((entry) => toRow(entry, puuid, region));
-            const saved = await this.summonerRankRepository.replaceAll(
-                puuid,
-                region,
-                rows,
-                new Date(),
-            );
-
-            return sortByQueue(saved.map(toRank));
-        } catch (error) {
-            // Nothing was ever read, so there is no honest fallback: answering "unranked"
-            // to a Master player would be a lie. A failure that is not Riot's — a database
-            // error — must not be hidden either.
-            if (
-                !readAt ||
-                !(error instanceof HttpException) ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-
-            this.logger.warn(
-                `Serving the stored standings of ${gameName}#${tagLine} on ${region}: Riot could not refresh them (${error.getStatus()}).`,
-            );
-
-            const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
-            return sortByQueue(stored.map(toRank));
-        }
+                return sortByQueue(saved.map(toRank));
+            },
+            logFallback: (_at, error) => {
+                this.logger.warn(
+                    `Serving the stored standings of ${gameName}#${tagLine} on ${region}: Riot could not refresh them (${error.getStatus()}).`,
+                );
+            },
+        });
     }
 
     private isFresh(readAt: Date) {

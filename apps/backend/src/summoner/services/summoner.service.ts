@@ -1,11 +1,12 @@
 import type { EPlatformRegion, RiotIdLookup, SummonerProfile } from '@lynf/shared';
-import { HttpException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
 import type { SummonerRow } from '../../database/schema/index';
 import { RiotExternal } from '../../riot/externals/riot.external';
 import { SummonerRepository } from '../repositories/summoner.repository';
+import { withFreshnessFallback } from '../utils/riot-freshness.utils';
 
 /**
  * Business logic for player profiles.
@@ -29,30 +30,17 @@ export class SummonerService {
     async findByRiotId(lookup: RiotIdLookup): Promise<SummonerProfile> {
         const stored = await this.summonerRepository.findByRiotId(lookup);
 
-        if (stored && this.isFresh(stored)) {
-            return this.toProfile(stored);
-        }
-
-        try {
-            return await this.refresh(lookup);
-        } catch (error) {
-            // Nothing to fall back on; or Riot no longer knows this Riot ID, and an old
-            // profile would show a player who is gone; or the failure is not Riot's at all
-            // (a database error), which must not be hidden.
-            if (
-                !stored ||
-                !(error instanceof HttpException) ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-
-            this.logger.warn(
-                `Serving the stored profile of ${stored.gameName}#${stored.tagLine} on ${stored.region}: Riot could not refresh it (${error.getStatus()}).`,
-            );
-
-            return this.toProfile(stored);
-        }
+        return withFreshnessFallback({
+            fallback: stored,
+            isFresh: (row) => this.isFresh(row),
+            serveStored: (row) => Promise.resolve(this.toProfile(row)),
+            refresh: () => this.refresh(lookup),
+            logFallback: (row, error) => {
+                this.logger.warn(
+                    `Serving the stored profile of ${row.gameName}#${row.tagLine} on ${row.region}: Riot could not refresh it (${error.getStatus()}).`,
+                );
+            },
+        });
     }
 
     private async refresh(lookup: RiotIdLookup) {
