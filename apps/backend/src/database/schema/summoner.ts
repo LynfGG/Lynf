@@ -19,6 +19,12 @@ export const summoners = pgTable(
         profileIconId: integer('profile_icon_id').notNull(),
         summonerLevel: integer('summoner_level').notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+        /**
+         * When the ranked standings of this account were last read from Riot. Null means
+         * never. It lives here rather than on `summoner_ranks` because a player who is
+         * ranked nowhere has no row there, and that answer must be datable too.
+         */
+        ranksUpdatedAt: timestamp('ranks_updated_at', { withTimezone: true }),
     },
     (table) => [primaryKey({ columns: [table.puuid, table.region] })],
 );

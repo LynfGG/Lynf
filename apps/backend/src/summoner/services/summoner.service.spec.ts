@@ -28,6 +28,7 @@ function rowAgedSeconds(seconds: number): SummonerRow {
         profileIconId: 10,
         summonerLevel: 500,
         updatedAt: new Date(Date.now() - seconds * 1000),
+        ranksUpdatedAt: null,
     };
 }
 

@@ -1,0 +1,214 @@
+{
+    "id": "7e6ee8bb-b448-45e3-acda-e8dca543a64c",
+    "prevId": "1ac3d6ec-4cfb-4094-938a-516eacc96bd3",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.summoners": {
+            "name": "summoners",
+            "schema": "",
+            "columns": {
+                "puuid": {
+                    "name": "puuid",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "region": {
+                    "name": "region",
+                    "type": "varchar(8)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "game_name": {
+                    "name": "game_name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "tag_line": {
+                    "name": "tag_line",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "profile_icon_id": {
+                    "name": "profile_icon_id",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "summoner_level": {
+                    "name": "summoner_level",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "ranks_updated_at": {
+                    "name": "ranks_updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "summoners_puuid_region_pk": {
+                    "name": "summoners_puuid_region_pk",
+                    "columns": ["puuid", "region"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.summoner_riot_ids": {
+            "name": "summoner_riot_ids",
+            "schema": "",
+            "columns": {
+                "region": {
+                    "name": "region",
+                    "type": "varchar(8)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "game_name": {
+                    "name": "game_name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "tag_line": {
+                    "name": "tag_line",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "puuid": {
+                    "name": "puuid",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "summoner_riot_ids_puuid_region_summoners_puuid_region_fk": {
+                    "name": "summoner_riot_ids_puuid_region_summoners_puuid_region_fk",
+                    "tableFrom": "summoner_riot_ids",
+                    "tableTo": "summoners",
+                    "columnsFrom": ["puuid", "region"],
+                    "columnsTo": ["puuid", "region"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "summoner_riot_ids_region_game_name_tag_line_pk": {
+                    "name": "summoner_riot_ids_region_game_name_tag_line_pk",
+                    "columns": ["region", "game_name", "tag_line"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.summoner_ranks": {
+            "name": "summoner_ranks",
+            "schema": "",
+            "columns": {
+                "puuid": {
+                    "name": "puuid",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "region": {
+                    "name": "region",
+                    "type": "varchar(8)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "queue": {
+                    "name": "queue",
+                    "type": "varchar(32)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "tier": {
+                    "name": "tier",
+                    "type": "varchar(16)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "division": {
+                    "name": "division",
+                    "type": "varchar(4)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "league_points": {
+                    "name": "league_points",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "wins": {
+                    "name": "wins",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "losses": {
+                    "name": "losses",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "summoner_ranks_puuid_region_summoners_puuid_region_fk": {
+                    "name": "summoner_ranks_puuid_region_summoners_puuid_region_fk",
+                    "tableFrom": "summoner_ranks",
+                    "tableTo": "summoners",
+                    "columnsFrom": ["puuid", "region"],
+                    "columnsTo": ["puuid", "region"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "summoner_ranks_puuid_region_queue_pk": {
+                    "name": "summoner_ranks_puuid_region_queue_pk",
+                    "columns": ["puuid", "region", "queue"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        }
+    },
+    "enums": {},
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}
