@@ -64,11 +64,7 @@ export default function SummonerPage() {
 
     const lookup = parseLookup(region, riotId);
     const { data, isFetching, error } = useSummonerProfile(lookup);
-    const {
-        data: ranks,
-        isFetching: isFetchingRanks,
-        error: ranksError,
-    } = useSummonerRanks(lookup);
+    const { data: ranks, isPending: isRanksPending, error: ranksError } = useSummonerRanks(lookup);
 
     if (!lookup) {
         return (
@@ -90,11 +86,15 @@ export default function SummonerPage() {
 
             {data && !isFetching && <SummonerCard profile={data} />}
 
-            {data && !isFetching && !isFetchingRanks && (
+            {data && (
                 <section className="flex flex-col gap-3">
                     <h2 className="font-display text-sm tracking-[1.4px] text-ink-muted uppercase">
                         {t('profile.ranks.title')}
                     </h2>
+
+                    {isRanksPending && (
+                        <p className="text-sm text-ink-muted">{t('profile.ranks.loading')}</p>
+                    )}
 
                     {ranksError && (
                         <p role="alert" className="text-sm text-loss">

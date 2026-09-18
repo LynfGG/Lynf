@@ -14,6 +14,7 @@
         "loading": "Recherche du joueur…",
         "ranks": {
             "title": "Classé",
+            "loading": "Recherche du classement…",
             "unranked": "Non classé cette saison",
             "queue": {
                 "RANKED_SOLO_5x5": "Solo/Duo",
