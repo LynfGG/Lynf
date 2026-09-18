@@ -16,7 +16,7 @@ export default function SummonerCard({ profile }: Readonly<SummonerCardProps>) {
     const { data: version } = useDataDragonVersion();
 
     return (
-        <article className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+        <article className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4">
             {version ? (
                 <img
                     src={`${DATA_DRAGON_BASE_URL}/cdn/${version}/img/profileicon/${profile.profileIconId}.png`}
@@ -26,18 +26,18 @@ export default function SummonerCard({ profile }: Readonly<SummonerCardProps>) {
                     className="rounded-lg"
                 />
             ) : (
-                <div aria-hidden="true" className="size-18 shrink-0 rounded-lg bg-slate-800" />
+                <div aria-hidden="true" className="size-18 shrink-0 rounded-lg bg-surface-raised" />
             )}
             <div className="min-w-0">
-                <h2 className="truncate text-lg font-semibold text-slate-100">
+                <h2 className="truncate text-lg font-semibold text-ink">
                     {profile.gameName}
-                    <span className="text-slate-500">#{profile.tagLine}</span>
+                    <span className="text-ink-muted">#{profile.tagLine}</span>
                 </h2>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-ink-muted">
                     {t('profile.level', { level: profile.summonerLevel })} ·{' '}
                     {REGION_LABELS[profile.region]}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-ink-muted">
                     {t('profile.updatedAt', {
                         when: new Date(profile.updatedAt),
                         formatParams: { when: { dateStyle: 'medium', timeStyle: 'short' } },

@@ -2,9 +2,11 @@ import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } 
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
+import RankCard from '../../components/features/rank-card';
 import SummonerCard from '../../components/features/summoner-card';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
 import { useSummonerProfile } from '../../hooks/use-summoner-profile';
+import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
 
 /**
  * A Riot ID travels in the URL as `gameName-tagLine`: that is how players copy it, and
@@ -62,6 +64,11 @@ export default function SummonerPage() {
 
     const lookup = parseLookup(region, riotId);
     const { data, isFetching, error } = useSummonerProfile(lookup);
+    const {
+        data: ranks,
+        isFetching: isFetchingRanks,
+        error: ranksError,
+    } = useSummonerRanks(lookup);
 
     if (!lookup) {
         return (
@@ -82,6 +89,32 @@ export default function SummonerPage() {
             )}
 
             {data && !isFetching && <SummonerCard profile={data} />}
+
+            {data && !isFetching && !isFetchingRanks && (
+                <section className="flex flex-col gap-3">
+                    <h2 className="font-display text-sm tracking-[1.4px] text-ink-muted uppercase">
+                        {t('profile.ranks.title')}
+                    </h2>
+
+                    {ranksError && (
+                        <p role="alert" className="text-sm text-loss">
+                            {messageFor(ranksError)}
+                        </p>
+                    )}
+
+                    {ranks && ranks.length === 0 && (
+                        <p className="text-sm text-ink-muted">{t('profile.ranks.unranked')}</p>
+                    )}
+
+                    {ranks && ranks.length > 0 && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {ranks.map((rank) => (
+                                <RankCard key={rank.queue} rank={rank} />
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
         </section>
     );
 }

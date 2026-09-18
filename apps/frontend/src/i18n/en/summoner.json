@@ -11,7 +11,18 @@
     "profile": {
         "level": "Level {{level, number}}",
         "updatedAt": "Updated {{when, datetime}}",
-        "loading": "Looking this player up…"
+        "loading": "Looking this player up…",
+        "ranks": {
+            "title": "Ranked",
+            "unranked": "Not ranked this season",
+            "queue": {
+                "RANKED_SOLO_5x5": "Solo/Duo",
+                "RANKED_FLEX_SR": "Flex"
+            },
+            "leaguePoints": "{{points, number}} LP",
+            "record": "{{wins, number}}W {{losses, number}}L",
+            "winRate": "{{rate, number}}% win rate"
+        }
     },
     "errors": {
         "invalidRiotId": "That is not a valid Riot ID.",
