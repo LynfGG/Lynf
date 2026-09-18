@@ -12,9 +12,11 @@ import {
 
 import { FindSummonerParamsDto } from '../dtos/find-summoner.params.dto';
 import { SummonerMasteryDto } from '../dtos/summoner-mastery.dto';
+import { SummonerMatchDto } from '../dtos/summoner-match.dto';
 import { SummonerProfileDto } from '../dtos/summoner-profile.dto';
 import { SummonerRankDto } from '../dtos/summoner-rank.dto';
 import { SummonerMasteryService } from '../services/summoner-mastery.service';
+import { SummonerMatchService } from '../services/summoner-match.service';
 import { SummonerRankService } from '../services/summoner-rank.service';
 import { SummonerService } from '../services/summoner.service';
 
@@ -25,6 +27,7 @@ export class SummonerController {
         private readonly summonerService: SummonerService,
         private readonly summonerRankService: SummonerRankService,
         private readonly summonerMasteryService: SummonerMasteryService,
+        private readonly summonerMatchService: SummonerMatchService,
     ) {}
 
     @Get(':region/:gameName/:tagLine')
@@ -85,5 +88,25 @@ export class SummonerController {
     })
     findMasteriesByRiotId(@Param() params: FindSummonerParamsDto): Promise<SummonerMasteryDto[]> {
         return this.summonerMasteryService.findByRiotId(params);
+    }
+
+    @Get(':region/:gameName/:tagLine/matches')
+    @ApiOperation({
+        summary: 'Read the most recent finished matches of a player.',
+        description:
+            'Bounded to the twenty most recent matches. A finished match is immutable and is never re-read from Riot once stored; only the list of match ids is refreshed periodically. An empty list means the player has no match history — it is an answer, not an absence.',
+    })
+    @ApiOkResponse({ type: SummonerMatchDto, isArray: true })
+    @ApiBadRequestResponse({ description: 'The region or the Riot ID is malformed.' })
+    @ApiNotFoundResponse({
+        description: 'No player has this Riot ID, or they have no profile on this platform.',
+    })
+    @ApiTooManyRequestsResponse({ description: 'The Riot API rate limit was reached.' })
+    @ApiBadGatewayResponse({ description: 'Riot rejected the API key configured on the server.' })
+    @ApiServiceUnavailableResponse({
+        description: 'The Riot API could not be reached, or answered with an unexpected error.',
+    })
+    findMatchesByRiotId(@Param() params: FindSummonerParamsDto): Promise<SummonerMatchDto[]> {
+        return this.summonerMatchService.findByRiotId(params);
     }
 }
