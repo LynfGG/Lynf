@@ -23,6 +23,13 @@ function parseLookup(
         return undefined;
     }
 
+    // `#` is the real separator of a Riot ID and can never appear in the ID itself, so a
+    // decoded `#` indicates the URL was built from an unencoded Riot ID (or tampered
+    // with) rather than from a properly encoded game name and tag line.
+    if (riotId.includes('#')) {
+        return undefined;
+    }
+
     const separator = riotId.lastIndexOf('-');
 
     if (separator <= 0 || separator === riotId.length - 1) {
@@ -31,13 +38,6 @@ function parseLookup(
 
     const gameName = riotId.slice(0, separator);
     const tagLine = riotId.slice(separator + 1);
-
-    // `#` is the real separator of a Riot ID and can never be part of a game name, so a
-    // decoded `#` here means the URL was built from an unencoded Riot ID (or tampered
-    // with) rather than a game name that happens to contain dashes.
-    if (gameName.includes('#')) {
-        return undefined;
-    }
 
     if (
         gameName.length < RIOT_ID_LENGTH.gameName.min ||
