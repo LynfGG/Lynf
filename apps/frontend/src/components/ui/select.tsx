@@ -16,13 +16,13 @@ export default function Select({ label, options, className = '', ...rest }: Sele
 
     return (
         <div className="flex flex-col gap-1">
-            <label htmlFor={id} className="text-xs font-medium text-slate-400">
+            <label htmlFor={id} className="text-xs font-medium text-ink-muted">
                 {label}
             </label>
             <select
                 {...rest}
                 id={id}
-                className={`rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-sky-500 ${className}`}
+                className={`rounded-lg border border-line bg-surface px-3 py-2 text-ink outline-none focus:border-gold ${className}`}
             >
                 {options.map((option) => (
                     <option key={option.value} value={option.value}>

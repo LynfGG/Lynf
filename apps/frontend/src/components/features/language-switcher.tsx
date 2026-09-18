@@ -16,8 +16,8 @@ export default function LanguageSwitcher() {
                     aria-current={i18n.resolvedLanguage === language}
                     className={`rounded px-2 py-1 text-xs font-semibold transition ${
                         i18n.resolvedLanguage === language
-                            ? 'bg-slate-700 text-slate-100'
-                            : 'text-slate-400 hover:text-slate-200'
+                            ? 'bg-surface-raised text-ink'
+                            : 'text-ink-muted hover:text-ink'
                     }`}
                 >
                     {t(`language.${language}`)}
