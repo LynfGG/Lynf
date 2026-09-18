@@ -221,4 +221,42 @@ describe('RiotExternal', () => {
             ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
         });
     });
+
+    describe('getTopChampionMasteriesByPuuid', () => {
+        it('asks the platform host for the top masteries, with the API key', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, []));
+
+            await external.getTopChampionMasteriesByPuuid('p-1', EPlatformRegion.EUW);
+
+            expect(requestedUrl()).toBe(
+                'https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/p-1/top?count=3',
+            );
+            const [, options] = fetchMock.mock.calls[0];
+            expect(options.headers['X-Riot-Token']).toBe('test-key');
+        });
+
+        it('returns an empty list for a player who has never played', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, []));
+
+            await expect(
+                external.getTopChampionMasteriesByPuuid('p-1', EPlatformRegion.EUW),
+            ).resolves.toEqual([]);
+        });
+
+        it('turns a rejected key into a 502', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.FORBIDDEN));
+
+            await expect(
+                external.getTopChampionMasteriesByPuuid('p-1', EPlatformRegion.EUW),
+            ).rejects.toBeInstanceOf(BadGatewayException);
+        });
+
+        it('does not swallow a rate limit', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.TOO_MANY_REQUESTS));
+
+            await expect(
+                external.getTopChampionMasteriesByPuuid('p-1', EPlatformRegion.EUW),
+            ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+        });
+    });
 });

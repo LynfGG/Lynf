@@ -8,12 +8,17 @@ import {
     NotFoundException,
     ServiceUnavailableException,
 } from '@nestjs/common';
-import type { EPlatformRegion, RiotIdLookup } from '@lynf/shared';
+import {
+    TOP_CHAMPION_MASTERIES_COUNT,
+    type EPlatformRegion,
+    type RiotIdLookup,
+} from '@lynf/shared';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
 import type {
     RiotAccountResponse,
+    RiotChampionMasteryResponse,
     RiotLeagueEntryResponse,
     RiotSummonerResponse,
 } from '../types/riot-responses';
@@ -76,6 +81,25 @@ export class RiotExternal {
         return this.request<RiotLeagueEntryResponse[]>(
             `${platformHost(region)}${path}`,
             `This account has no League profile on ${region}.`,
+        );
+    }
+
+    /**
+     * Reads the most-played champions of an account on one platform, best first.
+     *
+     * `champion-mastery-v4` also exposes every mastery an account holds, but only the
+     * top ones are ever shown, so only the top ones are ever asked for: a development
+     * key is a rate-limited resource, not one to spend on rows that would be discarded.
+     */
+    async getTopChampionMasteriesByPuuid(
+        puuid: string,
+        region: EPlatformRegion,
+    ): Promise<RiotChampionMasteryResponse[]> {
+        const path = `/lol/champion-mastery/v4/champion-masteries/by-puuid/${encodeURIComponent(puuid)}/top?count=${TOP_CHAMPION_MASTERIES_COUNT}`;
+
+        return this.request<RiotChampionMasteryResponse[]>(
+            `${platformHost(region)}${path}`,
+            `This account has no champion mastery on ${region}.`,
         );
     }
 

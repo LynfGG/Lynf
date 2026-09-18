@@ -22,3 +22,16 @@ export type RiotLeagueEntryResponse = {
     wins: number;
     losses: number;
 };
+
+/**
+ * One entry of `GET /lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top`.
+ *
+ * `lastPlayTime` is epoch milliseconds, as Riot returns every timestamp on this API —
+ * unlike `revisionDate` on `summoner-v4`, nothing here renames it.
+ */
+export type RiotChampionMasteryResponse = {
+    championId: number;
+    championLevel: number;
+    championPoints: number;
+    lastPlayTime: number;
+};
