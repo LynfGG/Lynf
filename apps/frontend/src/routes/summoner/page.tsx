@@ -2,8 +2,10 @@ import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } 
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
+import ChampionMasteryBand from '../../components/features/champion-mastery-band';
 import SummonerHero from '../../components/features/summoner-hero';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
+import { useSummonerMasteries } from '../../hooks/use-summoner-masteries';
 import { useSummonerProfile } from '../../hooks/use-summoner-profile';
 import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
 
@@ -76,6 +78,13 @@ export default function SummonerPage() {
         error: ranksError,
         refetch: refetchRanks,
     } = useSummonerRanks(lookup);
+    const {
+        data: masteries,
+        isPending: isMasteriesPending,
+        isFetching: isMasteriesFetching,
+        error: masteriesError,
+        refetch: refetchMasteries,
+    } = useSummonerMasteries(lookup);
 
     if (!lookup) {
         return (
@@ -88,6 +97,7 @@ export default function SummonerPage() {
     const handleRefresh = () => {
         void refetchProfile();
         void refetchRanks();
+        void refetchMasteries();
     };
 
     return (
@@ -101,14 +111,22 @@ export default function SummonerPage() {
             )}
 
             {data && (
-                <SummonerHero
-                    profile={data}
-                    ranks={ranks}
-                    isRanksPending={isRanksPending}
-                    ranksError={ranksError}
-                    onRefresh={handleRefresh}
-                    isRefreshing={isFetching || isRanksFetching}
-                />
+                <>
+                    <SummonerHero
+                        profile={data}
+                        ranks={ranks}
+                        isRanksPending={isRanksPending}
+                        ranksError={ranksError}
+                        onRefresh={handleRefresh}
+                        isRefreshing={isFetching || isRanksFetching || isMasteriesFetching}
+                    />
+
+                    <ChampionMasteryBand
+                        masteries={masteries}
+                        isPending={isMasteriesPending}
+                        error={masteriesError}
+                    />
+                </>
             )}
         </section>
     );

@@ -25,6 +25,13 @@
                 "solo": "{{standing}} · {{lp}}",
                 "flex": "{{queue}} · {{standing}}"
             }
+        },
+        "masteries": {
+            "loading": "Recherche des maîtrises de champions…",
+            "empty": "N'a encore joué aucune partie",
+            "unknownChampion": "Champion {{id, number}}",
+            "level": "Maîtrise {{level, number}}",
+            "points": "{{points, number}} pts"
         }
     },
     "errors": {

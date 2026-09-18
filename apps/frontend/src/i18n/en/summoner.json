@@ -25,6 +25,13 @@
                 "solo": "{{standing}} · {{lp}}",
                 "flex": "{{queue}} · {{standing}}"
             }
+        },
+        "masteries": {
+            "loading": "Looking up champion masteries…",
+            "empty": "Hasn't played a game yet",
+            "unknownChampion": "Champion {{id, number}}",
+            "level": "Mastery {{level, number}}",
+            "points": "{{points, number}} pts"
         }
     },
     "errors": {
