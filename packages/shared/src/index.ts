@@ -4,3 +4,5 @@ export type { SummonerRank } from './rank.js';
 export { ERankedQueue, RANKED_QUEUES } from './rank.js';
 export type { ChampionMastery } from './mastery.js';
 export { TOP_CHAMPION_MASTERIES_COUNT } from './mastery.js';
+export type { MatchParticipantSummary, MatchSummary } from './match.js';
+export { MATCH_HISTORY_LIMIT } from './match.js';
