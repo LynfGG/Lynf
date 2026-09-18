@@ -11,7 +11,7 @@ export default function RootLayout() {
         <div className="flex min-h-screen flex-col bg-ground text-ink">
             <header className="flex items-center justify-between border-b border-line px-5 py-4">
                 <div>
-                    <h1 className="font-display text-lg uppercase tracking-[3px] text-gold">
+                    <h1 className="font-display font-bold text-lg uppercase tracking-[3px] text-gold">
                         {t('appName')}
                     </h1>
                     <p className="text-xs text-ink-muted">{t('tagline')}</p>
