@@ -22,6 +22,14 @@ export const environmentSchema = z.object({
 
     /** How long stored champion masteries are considered fresh before Riot is asked again. */
     SUMMONER_MASTERIES_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
+
+    /**
+     * How long the *match id list* of an account is considered fresh before Riot is
+     * asked again for it. It governs nothing else: a match already stored is never
+     * re-read from Riot regardless of this value, however old it is — see the match
+     * history brief.
+     */
+    SUMMONER_MATCHES_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
