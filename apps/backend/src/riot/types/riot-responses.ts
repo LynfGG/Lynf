@@ -12,3 +12,13 @@ export type RiotSummonerResponse = {
     summonerLevel: number;
     revisionDate: number;
 };
+
+/** One entry of `GET /lol/league/v4/entries/by-puuid/{puuid}`. */
+export type RiotLeagueEntryResponse = {
+    queueType: string;
+    tier: string;
+    rank: string;
+    leaguePoints: number;
+    wins: number;
+    losses: number;
+};

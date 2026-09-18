@@ -12,7 +12,11 @@ import type { EPlatformRegion, RiotIdLookup } from '@lynf/shared';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
-import type { RiotAccountResponse, RiotSummonerResponse } from '../types/riot-responses';
+import type {
+    RiotAccountResponse,
+    RiotLeagueEntryResponse,
+    RiotSummonerResponse,
+} from '../types/riot-responses';
 import { accountClusterHost, platformHost } from '../utils/riot-routing.utils';
 
 /** Past this, a Riot call is abandoned: a hanging request would otherwise hold the page for minutes. */
@@ -54,6 +58,24 @@ export class RiotExternal {
         return this.request<RiotSummonerResponse>(
             `${platformHost(region)}${path}`,
             `This account has never played League of Legends on ${region}.`,
+        );
+    }
+
+    /**
+     * Reads every ranked standing an account holds on one platform.
+     *
+     * A player who has never been ranked is not an error: Riot answers `200` with an
+     * empty array. Only an unknown account produces a 404.
+     */
+    async getLeagueEntriesByPuuid(
+        puuid: string,
+        region: EPlatformRegion,
+    ): Promise<RiotLeagueEntryResponse[]> {
+        const path = `/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
+
+        return this.request<RiotLeagueEntryResponse[]>(
+            `${platformHost(region)}${path}`,
+            `This account has no League profile on ${region}.`,
         );
     }
 
