@@ -19,6 +19,9 @@ export const environmentSchema = z.object({
 
     /** How long stored ranked standings are considered fresh before Riot is asked again. */
     SUMMONER_RANKS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+
+    /** How long stored champion masteries are considered fresh before Riot is asked again. */
+    SUMMONER_MASTERIES_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

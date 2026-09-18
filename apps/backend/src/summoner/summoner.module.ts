@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 
 import { RiotModule } from '../riot/riot.module';
 import { SummonerController } from './controllers/summoner.controller';
+import { SummonerMasteryRepository } from './repositories/summoner-mastery.repository';
 import { SummonerRankRepository } from './repositories/summoner-rank.repository';
 import { SummonerRepository } from './repositories/summoner.repository';
 import { SummonerResourceReadRepository } from './repositories/summoner-resource-read.repository';
+import { SummonerMasteryService } from './services/summoner-mastery.service';
 import { SummonerRankService } from './services/summoner-rank.service';
 import { SummonerService } from './services/summoner.service';
 
@@ -16,6 +18,8 @@ import { SummonerService } from './services/summoner.service';
         SummonerRepository,
         SummonerRankService,
         SummonerRankRepository,
+        SummonerMasteryService,
+        SummonerMasteryRepository,
         SummonerResourceReadRepository,
     ],
 })
