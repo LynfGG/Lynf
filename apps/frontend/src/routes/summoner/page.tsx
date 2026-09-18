@@ -2,8 +2,7 @@ import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } 
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
-import RankCard from '../../components/features/rank-card';
-import SummonerCard from '../../components/features/summoner-card';
+import SummonerHero from '../../components/features/summoner-hero';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
 import { useSummonerProfile } from '../../hooks/use-summoner-profile';
 import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
@@ -63,8 +62,20 @@ export default function SummonerPage() {
     const { region, riotId } = useParams();
 
     const lookup = parseLookup(region, riotId);
-    const { data, isFetching, error } = useSummonerProfile(lookup);
-    const { data: ranks, isPending: isRanksPending, error: ranksError } = useSummonerRanks(lookup);
+    const {
+        data,
+        isPending,
+        isFetching,
+        error,
+        refetch: refetchProfile,
+    } = useSummonerProfile(lookup);
+    const {
+        data: ranks,
+        isPending: isRanksPending,
+        isFetching: isRanksFetching,
+        error: ranksError,
+        refetch: refetchRanks,
+    } = useSummonerRanks(lookup);
 
     if (!lookup) {
         return (
@@ -74,46 +85,30 @@ export default function SummonerPage() {
         );
     }
 
+    const handleRefresh = () => {
+        void refetchProfile();
+        void refetchRanks();
+    };
+
     return (
         <section className="flex flex-col gap-6">
-            {isFetching && <p className="text-sm text-ink-muted">{t('profile.loading')}</p>}
+            {isPending && <p className="text-sm text-ink-muted">{t('profile.loading')}</p>}
 
-            {error && !isFetching && (
+            {error && !isPending && (
                 <p role="alert" className="text-sm text-loss">
                     {messageFor(error)}
                 </p>
             )}
 
-            {data && !isFetching && <SummonerCard profile={data} />}
-
             {data && (
-                <section className="flex flex-col gap-3">
-                    <h2 className="font-display text-sm tracking-[1.4px] text-ink-muted uppercase">
-                        {t('profile.ranks.title')}
-                    </h2>
-
-                    {isRanksPending && (
-                        <p className="text-sm text-ink-muted">{t('profile.ranks.loading')}</p>
-                    )}
-
-                    {ranksError && (
-                        <p role="alert" className="text-sm text-loss">
-                            {messageFor(ranksError)}
-                        </p>
-                    )}
-
-                    {ranks && ranks.length === 0 && (
-                        <p className="text-sm text-ink-muted">{t('profile.ranks.unranked')}</p>
-                    )}
-
-                    {ranks && ranks.length > 0 && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {ranks.map((rank) => (
-                                <RankCard key={rank.queue} rank={rank} />
-                            ))}
-                        </div>
-                    )}
-                </section>
+                <SummonerHero
+                    profile={data}
+                    ranks={ranks}
+                    isRanksPending={isRanksPending}
+                    ranksError={ranksError}
+                    onRefresh={handleRefresh}
+                    isRefreshing={isFetching || isRanksFetching}
+                />
             )}
         </section>
     );

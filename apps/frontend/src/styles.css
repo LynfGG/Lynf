@@ -10,6 +10,10 @@
     --color-gold: #c8a24a;
     --color-win: #5ba0e0;
     --color-loss: #e0726a;
+    --color-solo: #6fcbb0;
+    --color-solo-surface: #16302b;
+    --color-flex: #a090d8;
+    --color-flex-surface: #232036;
 
     --font-display: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
     --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;

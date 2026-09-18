@@ -9,11 +9,11 @@
         "submit": "Search"
     },
     "profile": {
-        "level": "Level {{level, number}}",
+        "level": "LV {{level, number}}",
         "updatedAt": "Updated {{when, datetime}}",
         "loading": "Looking this player up…",
+        "refresh": "Refresh",
         "ranks": {
-            "title": "Ranked",
             "loading": "Looking up ranked standings…",
             "unranked": "Not ranked this season",
             "queue": {
@@ -21,8 +21,10 @@
                 "RANKED_FLEX_SR": "Flex"
             },
             "leaguePoints": "{{points, number}} LP",
-            "record": "{{wins, number}}W {{losses, number}}L",
-            "winRate": "{{rate, number}}% win rate"
+            "pill": {
+                "solo": "{{standing}} · {{lp}}",
+                "flex": "{{queue}} · {{standing}}"
+            }
         }
     },
     "errors": {

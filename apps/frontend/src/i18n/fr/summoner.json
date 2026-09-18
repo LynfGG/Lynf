@@ -9,11 +9,11 @@
         "submit": "Rechercher"
     },
     "profile": {
-        "level": "Niveau {{level, number}}",
+        "level": "NV {{level, number}}",
         "updatedAt": "Mis à jour le {{when, datetime}}",
         "loading": "Recherche du joueur…",
+        "refresh": "Actualiser",
         "ranks": {
-            "title": "Classé",
             "loading": "Recherche du classement…",
             "unranked": "Non classé cette saison",
             "queue": {
@@ -21,8 +21,10 @@
                 "RANKED_FLEX_SR": "Flexible"
             },
             "leaguePoints": "{{points, number}} PL",
-            "record": "{{wins, number}}V {{losses, number}}D",
-            "winRate": "{{rate, number}} % de victoires"
+            "pill": {
+                "solo": "{{standing}} · {{lp}}",
+                "flex": "{{queue}} · {{standing}}"
+            }
         }
     },
     "errors": {
