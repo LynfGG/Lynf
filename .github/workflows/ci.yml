@@ -4,7 +4,12 @@ on:
     pull_request:
         branches: [develop, release, main]
     push:
-        branches: [develop, release, main]
+        # The reference branch carries the whole product on its own and never opens a
+        # pull request, so nothing would ever verify it. Listing it here is what gives
+        # it a real run — Postgres, tests, coverage, translations, build. This line
+        # lives on that branch alone and is never carried back to develop. The tag job
+        # below stays out of reach: it only runs on refs/heads/release.
+        branches: [develop, release, main, 'reference/**']
 
 # The default token is read-only for the whole organisation. Only the tag job needs
 # more, and it asks for it on its own.
