@@ -36,7 +36,12 @@ export default function HomePage() {
     const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        navigate(`/${search.region}/${search.gameName}-${search.tagLine}`);
+        // Each part is encoded on its own before joining, so a `#` (or a literal `-`
+        // introduced by encoding) pasted into either field cannot be mistaken for the
+        // separator or open a URL fragment — the same discipline as the API client.
+        const riotId = `${encodeURIComponent(search.gameName)}-${encodeURIComponent(search.tagLine)}`;
+
+        navigate(`/${search.region}/${riotId}`);
     };
 
     return (

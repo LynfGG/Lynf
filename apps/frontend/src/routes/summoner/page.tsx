@@ -1,4 +1,4 @@
-import { EPlatformRegion, PLATFORM_REGIONS, type RiotIdLookup } from '@lynf/shared';
+import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
@@ -29,10 +29,29 @@ function parseLookup(
         return undefined;
     }
 
+    const gameName = riotId.slice(0, separator);
+    const tagLine = riotId.slice(separator + 1);
+
+    // `#` is the real separator of a Riot ID and can never be part of a game name, so a
+    // decoded `#` here means the URL was built from an unencoded Riot ID (or tampered
+    // with) rather than a game name that happens to contain dashes.
+    if (gameName.includes('#')) {
+        return undefined;
+    }
+
+    if (
+        gameName.length < RIOT_ID_LENGTH.gameName.min ||
+        gameName.length > RIOT_ID_LENGTH.gameName.max ||
+        tagLine.length < RIOT_ID_LENGTH.tagLine.min ||
+        tagLine.length > RIOT_ID_LENGTH.tagLine.max
+    ) {
+        return undefined;
+    }
+
     return {
         region: region as EPlatformRegion,
-        gameName: riotId.slice(0, separator),
-        tagLine: riotId.slice(separator + 1),
+        gameName,
+        tagLine,
     };
 }
 
