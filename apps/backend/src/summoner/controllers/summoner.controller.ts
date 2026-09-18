@@ -48,7 +48,7 @@ export class SummonerController {
     @ApiOperation({
         summary: 'Read the ranked standings of a player.',
         description:
-            'An empty list means the player is ranked in neither queue — it is an answer, not an absence. Stored standings are served while they are fresh, and when Riot cannot refresh them, whatever their age.',
+            'An empty list means the player is ranked in neither queue — it is an answer, not an absence. Stored standings are served while they are fresh, and when Riot cannot refresh them, whatever their age: the 429, 502 and 503 errors only occur when nothing is stored.',
     })
     @ApiOkResponse({ type: SummonerRankDto, isArray: true })
     @ApiBadRequestResponse({ description: 'The region or the Riot ID is malformed.' })
