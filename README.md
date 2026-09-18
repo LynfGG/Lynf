@@ -53,6 +53,12 @@ pnpm dev
 - Front end: <http://localhost:5173>
 - API documentation: <http://localhost:3000/docs>
 
+**Ctrl-C stops everything**, servers included, and gives both ports back. It is worth saying,
+because it is not what a chain of watchers does on its own: the launcher would die while the
+servers kept the ports, and the next `pnpm dev` would fail to bind. `scripts/dev.mjs` is what
+makes the whole stack stop together, and the price is that Vite's keyboard shortcuts are gone —
+its children are deliberately given no keyboard.
+
 ## Checks
 
 ```bash

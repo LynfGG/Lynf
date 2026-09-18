@@ -7,7 +7,7 @@
         "node": ">=22.13"
     },
     "scripts": {
-        "dev": "pnpm --filter \"@lynf/shared\" build && pnpm --parallel --filter \"@lynf/shared\" --filter \"@lynf/backend\" --filter \"@lynf/frontend\" dev",
+        "dev": "node scripts/dev.mjs",
         "build": "pnpm -r --if-present build",
         "typecheck": "pnpm -r --if-present typecheck",
         "test": "pnpm --filter \"@lynf/backend\" test",
