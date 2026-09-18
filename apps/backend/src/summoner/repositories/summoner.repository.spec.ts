@@ -120,7 +120,10 @@ describeWithDatabase('SummonerRepository', () => {
             .select()
             .from(summoners)
             .where(like(summoners.puuid, `${PUUID_PREFIX}%`));
-        const riotIds = await database.select().from(summonerRiotIds);
+        const riotIds = await database
+            .select()
+            .from(summonerRiotIds)
+            .where(like(summonerRiotIds.puuid, `${PUUID_PREFIX}%`));
 
         expect(rows).toHaveLength(1);
         expect(rows[0].summonerLevel).toBe(501);
