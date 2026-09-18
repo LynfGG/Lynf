@@ -35,3 +35,57 @@ export type RiotChampionMasteryResponse = {
     championPoints: number;
     lastPlayTime: number;
 };
+
+/**
+ * One participant of `GET /lol/match/v5/matches/{matchId}` (`info.participants`).
+ *
+ * Only the fields Lynf's match list needs are declared — Riot's real payload carries
+ * many more. `teamPosition` is empty on some queues (arcade modes among them) and on
+ * matches old enough to predate it: never assumed non-empty. `riotIdGameName` and
+ * `riotIdTagline` are the modern Riot ID fields; `summonerName` is Riot's own
+ * deprecated one and is not read here.
+ */
+export type RiotMatchParticipantResponse = {
+    puuid: string;
+    championId: number;
+    teamId: number;
+    teamPosition: string;
+    win: boolean;
+    kills: number;
+    deaths: number;
+    assists: number;
+    totalMinionsKilled: number;
+    neutralMinionsKilled: number;
+    goldEarned: number;
+    totalDamageDealtToChampions: number;
+    riotIdGameName: string;
+    riotIdTagline: string;
+    item0: number;
+    item1: number;
+    item2: number;
+    item3: number;
+    item4: number;
+    item5: number;
+    item6: number;
+};
+
+/**
+ * Shape of `GET /lol/match/v5/matches/{matchId}`, trimmed to what Lynf reads.
+ *
+ * `info.gameDuration` is seconds for every match with a `gameEndTimestamp` — true of
+ * every match this app ever fetches, since Riot only backfilled that field from patch
+ * 11.20 (October 2021) onward, long before any match a development key can reach.
+ */
+export type RiotMatchResponse = {
+    metadata: {
+        matchId: string;
+    };
+    info: {
+        platformId: string;
+        queueId: number;
+        gameDuration: number;
+        gameEndTimestamp: number;
+        gameVersion: string;
+        participants: RiotMatchParticipantResponse[];
+    };
+};

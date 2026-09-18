@@ -20,9 +20,10 @@ import type {
     RiotAccountResponse,
     RiotChampionMasteryResponse,
     RiotLeagueEntryResponse,
+    RiotMatchResponse,
     RiotSummonerResponse,
 } from '../types/riot-responses';
-import { accountClusterHost, platformHost } from '../utils/riot-routing.utils';
+import { accountClusterHost, matchClusterHost, platformHost } from '../utils/riot-routing.utils';
 
 /** Past this, a Riot call is abandoned: a hanging request would otherwise hold the page for minutes. */
 const REQUEST_TIMEOUT_MS = 5000;
@@ -100,6 +101,42 @@ export class RiotExternal {
         return this.request<RiotChampionMasteryResponse[]>(
             `${platformHost(region)}${path}`,
             `This account has no champion mastery on ${region}.`,
+        );
+    }
+
+    /**
+     * Reads the ids of the most recent matches an account played, most recent first.
+     *
+     * `count` is never let past `MATCH_HISTORY_LIMIT`: the caller enforces that, this
+     * method just forwards whatever it is given. match-v5 routes by regional cluster,
+     * not by platform — see `matchClusterHost` for the mapping, which differs from the
+     * one account-v1 uses.
+     */
+    async getMatchIdsByPuuid(
+        puuid: string,
+        region: EPlatformRegion,
+        count: number,
+    ): Promise<string[]> {
+        const path = `/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?start=0&count=${count}`;
+
+        return this.request<string[]>(
+            `${matchClusterHost(region)}${path}`,
+            `This account has no match history on ${region}.`,
+        );
+    }
+
+    /**
+     * Reads the full detail of one match.
+     *
+     * Called only for matches not already in storage: a finished match never changes,
+     * so once fetched it is never fetched again.
+     */
+    async getMatchById(matchId: string, region: EPlatformRegion): Promise<RiotMatchResponse> {
+        const path = `/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
+
+        return this.request<RiotMatchResponse>(
+            `${matchClusterHost(region)}${path}`,
+            `Match ${matchId} could not be found.`,
         );
     }
 

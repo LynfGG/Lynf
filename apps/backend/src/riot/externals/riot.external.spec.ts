@@ -34,6 +34,30 @@ const ACCOUNT_CLUSTERS: [EPlatformRegion, string][] = [
     [EPlatformRegion.VN, 'asia'],
 ];
 
+/**
+ * The match-v5 cluster every platform must be routed to — deliberately different from
+ * `ACCOUNT_CLUSTERS` above for OCE, PH, SG, TH, TW and VN, which match-v5 routes to
+ * `sea` while account-v1 still routes them to `asia`.
+ */
+const MATCH_CLUSTERS: [EPlatformRegion, string][] = [
+    [EPlatformRegion.EUW, 'europe'],
+    [EPlatformRegion.EUNE, 'europe'],
+    [EPlatformRegion.TR, 'europe'],
+    [EPlatformRegion.RU, 'europe'],
+    [EPlatformRegion.NA, 'americas'],
+    [EPlatformRegion.BR, 'americas'],
+    [EPlatformRegion.LAN, 'americas'],
+    [EPlatformRegion.LAS, 'americas'],
+    [EPlatformRegion.KR, 'asia'],
+    [EPlatformRegion.JP, 'asia'],
+    [EPlatformRegion.OCE, 'sea'],
+    [EPlatformRegion.PH, 'sea'],
+    [EPlatformRegion.SG, 'sea'],
+    [EPlatformRegion.TH, 'sea'],
+    [EPlatformRegion.TW, 'sea'],
+    [EPlatformRegion.VN, 'sea'],
+];
+
 function respondWith(status: number, body: unknown = {}): Response {
     return {
         ok: status >= 200 && status < 300,
@@ -256,6 +280,99 @@ describe('RiotExternal', () => {
 
             await expect(
                 external.getTopChampionMasteriesByPuuid('p-1', EPlatformRegion.EUW),
+            ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+        });
+    });
+
+    describe('getMatchIdsByPuuid', () => {
+        it('asks the match cluster for the ids, most recent first, with the API key', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, []));
+
+            await external.getMatchIdsByPuuid('p-1', EPlatformRegion.EUW, 20);
+
+            expect(requestedUrl()).toBe(
+                'https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/p-1/ids?start=0&count=20',
+            );
+            const [, options] = fetchMock.mock.calls[0];
+            expect(options.headers['X-Riot-Token']).toBe('test-key');
+        });
+
+        it('forwards the count it is given', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, []));
+
+            await external.getMatchIdsByPuuid('p-1', EPlatformRegion.EUW, 3);
+
+            expect(requestedUrl()).toContain('count=3');
+        });
+
+        it.each(MATCH_CLUSTERS)('routes match ids on %s to the %s cluster', async (region) => {
+            const cluster = MATCH_CLUSTERS.find(([platform]) => platform === region)?.[1];
+            await external.getMatchIdsByPuuid('p-1', region, 20);
+
+            expect(requestedUrl().startsWith(`https://${cluster}.api.riotgames.com/`)).toBe(true);
+        });
+
+        it('routes OCE to sea for match-v5, unlike the asia it gets from account-v1', async () => {
+            await external.getMatchIdsByPuuid('p-1', EPlatformRegion.OCE, 20);
+
+            expect(requestedUrl().startsWith('https://sea.api.riotgames.com/')).toBe(true);
+        });
+
+        it('has a cluster test for every platform', () => {
+            const tested = MATCH_CLUSTERS.map(([region]) => region);
+
+            expect([...tested].sort()).toEqual([...PLATFORM_REGIONS].sort());
+        });
+
+        it('turns a rejected key into a 502', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.FORBIDDEN));
+
+            await expect(
+                external.getMatchIdsByPuuid('p-1', EPlatformRegion.EUW, 20),
+            ).rejects.toBeInstanceOf(BadGatewayException);
+        });
+
+        it('does not swallow a rate limit', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.TOO_MANY_REQUESTS));
+
+            await expect(
+                external.getMatchIdsByPuuid('p-1', EPlatformRegion.EUW, 20),
+            ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+        });
+    });
+
+    describe('getMatchById', () => {
+        it('asks the match cluster for the match, encoded, with the API key', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, {}));
+
+            await external.getMatchById('EUW1_123/456', EPlatformRegion.EUW);
+
+            expect(requestedUrl()).toBe(
+                'https://europe.api.riotgames.com/lol/match/v5/matches/EUW1_123%2F456',
+            );
+            const [, options] = fetchMock.mock.calls[0];
+            expect(options.headers['X-Riot-Token']).toBe('test-key');
+        });
+
+        it('routes to the match cluster, not the account one', async () => {
+            await external.getMatchById('OC1_1', EPlatformRegion.OCE);
+
+            expect(requestedUrl().startsWith('https://sea.api.riotgames.com/')).toBe(true);
+        });
+
+        it('turns a 404 into a NotFoundException', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.NOT_FOUND));
+
+            await expect(
+                external.getMatchById('EUW1_123', EPlatformRegion.EUW),
+            ).rejects.toBeInstanceOf(NotFoundException);
+        });
+
+        it('does not swallow a rate limit', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.TOO_MANY_REQUESTS));
+
+            await expect(
+                external.getMatchById('EUW1_123', EPlatformRegion.EUW),
             ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
         });
     });
