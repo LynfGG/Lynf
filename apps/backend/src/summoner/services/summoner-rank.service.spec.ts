@@ -190,4 +190,22 @@ describe('SummonerRankService', () => {
 
         await expect(service.findByRiotId(LOOKUP)).rejects.toBeInstanceOf(NotFoundException);
     });
+
+    it('lets a 404 from the refresh call through instead of serving stale standings', async () => {
+        repository.findReadAt.mockResolvedValue(readSecondsAgo(TTL_SECONDS + 1));
+        repository.findByPuuid.mockResolvedValue([STORED]);
+        riot.getLeagueEntriesByPuuid.mockRejectedValue(new NotFoundException());
+
+        await expect(service.findByRiotId(LOOKUP)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('treats standings read exactly at the TTL as stale', async () => {
+        repository.findReadAt.mockResolvedValue(readSecondsAgo(TTL_SECONDS));
+        repository.findByPuuid.mockResolvedValue([STORED]);
+        riot.getLeagueEntriesByPuuid.mockResolvedValue([]);
+
+        await service.findByRiotId(LOOKUP);
+
+        expect(riot.getLeagueEntriesByPuuid).toHaveBeenCalledWith('p-1', EPlatformRegion.EUW);
+    });
 });
