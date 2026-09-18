@@ -8,6 +8,7 @@ import type { SummonerRankRow } from '../../database/schema/index';
 import { RiotExternal } from '../../riot/externals/riot.external';
 import type { RiotLeagueEntryResponse } from '../../riot/types/riot-responses';
 import { SummonerRankRepository } from '../repositories/summoner-rank.repository';
+import { SummonerRepository } from '../repositories/summoner.repository';
 import { SummonerService } from './summoner.service';
 
 const SHOWN_QUEUES: readonly string[] = RANKED_QUEUES;
@@ -15,9 +16,11 @@ const SHOWN_QUEUES: readonly string[] = RANKED_QUEUES;
 /**
  * Business logic for ranked standings.
  *
- * The profile service resolves the player first: it yields the puuid and, as a
- * side effect, guarantees the summoner row exists — the foreign key would refuse
- * the write otherwise.
+ * All this needs from the player's profile is a puuid, and a `summoners` row to
+ * satisfy the foreign key on `summoner_ranks` — not a fresh profile. A puuid never
+ * changes, so whatever is already stored answers both, however old it is. The full
+ * resolution through the profile service — account-v1, then summoner-v4 — is only
+ * asked for the first time a player is ever seen, when nothing is stored yet.
  */
 @Injectable()
 export class SummonerRankService {
@@ -25,14 +28,15 @@ export class SummonerRankService {
 
     constructor(
         private readonly summonerService: SummonerService,
+        private readonly summonerRepository: SummonerRepository,
         private readonly summonerRankRepository: SummonerRankRepository,
         private readonly riotExternal: RiotExternal,
         @Inject(ENVIRONMENT) private readonly environment: Environment,
     ) {}
 
     async findByRiotId(lookup: RiotIdLookup): Promise<SummonerRank[]> {
-        const profile = await this.summonerService.findByRiotId(lookup);
-        const { puuid, region } = profile;
+        const { region } = lookup;
+        const { puuid, gameName, tagLine } = await this.resolvePlayer(lookup);
 
         const readAt = await this.summonerRankRepository.findReadAt(puuid, region);
 
@@ -65,7 +69,7 @@ export class SummonerRankService {
             }
 
             this.logger.warn(
-                `Serving the stored standings of ${profile.gameName}#${profile.tagLine} on ${region}: Riot could not refresh them (${error.getStatus()}).`,
+                `Serving the stored standings of ${gameName}#${tagLine} on ${region}: Riot could not refresh them (${error.getStatus()}).`,
             );
 
             const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
@@ -76,6 +80,22 @@ export class SummonerRankService {
     private isFresh(readAt: Date) {
         const ageInSeconds = (Date.now() - readAt.getTime()) / 1000;
         return ageInSeconds < this.environment.SUMMONER_RANKS_TTL_SECONDS;
+    }
+
+    /**
+     * Yields the puuid this player is known under, and enough of their identity to log
+     * with. A stored row already answers both, whatever its age, and also guarantees the
+     * `summoners` row that `summoner_ranks` has a foreign key to. Only a player never
+     * seen before goes through the full profile resolution.
+     */
+    private async resolvePlayer(lookup: RiotIdLookup) {
+        const stored = await this.summonerRepository.findByRiotId(lookup);
+
+        if (stored) {
+            return { puuid: stored.puuid, gameName: stored.gameName, tagLine: stored.tagLine };
+        }
+
+        return this.summonerService.findByRiotId(lookup);
     }
 }
 
