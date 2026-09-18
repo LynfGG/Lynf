@@ -1,4 +1,5 @@
 import { EPlatformRegion, ERankedQueue } from '@lynf/shared';
+import { eq } from 'drizzle-orm';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
@@ -35,8 +36,12 @@ describeWithDatabase('SummonerRankRepository', () => {
         await pool.end();
     });
 
+    // Own puuid so this suite's cleanup never touches a fixture another database-backed
+    // suite left in the shared test database.
+    const PUUID = 'summoner-rank-p-1';
+
     const SUMMONER = {
-        puuid: 'p-1',
+        puuid: PUUID,
         region: EPlatformRegion.EUW,
         gameName: 'Faker',
         tagLine: 'KR1',
@@ -46,27 +51,27 @@ describeWithDatabase('SummonerRankRepository', () => {
     };
 
     beforeEach(async () => {
-        await database.delete(summoners);
+        await database.delete(summoners).where(eq(summoners.puuid, PUUID));
         await database.insert(summoners).values(SUMMONER);
     });
 
     it('returns nothing for a player whose ranks were never read', async () => {
-        await expect(repository.findByPuuid('p-1', EPlatformRegion.EUW)).resolves.toEqual([]);
+        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toEqual([]);
     });
 
     it('has no read date before the standings were ever read', async () => {
-        await expect(repository.findReadAt('p-1', EPlatformRegion.EUW)).resolves.toBeNull();
+        await expect(repository.findReadAt(PUUID, EPlatformRegion.EUW)).resolves.toBeNull();
     });
 
     it('stores standings and dates the read on the summoner', async () => {
         const readAt = new Date('2026-09-18T10:00:00.000Z');
 
         await repository.replaceAll(
-            'p-1',
+            PUUID,
             EPlatformRegion.EUW,
             [
                 {
-                    puuid: 'p-1',
+                    puuid: PUUID,
                     region: EPlatformRegion.EUW,
                     queue: ERankedQueue.SOLO,
                     tier: 'EMERALD',
@@ -79,16 +84,16 @@ describeWithDatabase('SummonerRankRepository', () => {
             readAt,
         );
 
-        await expect(repository.findByPuuid('p-1', EPlatformRegion.EUW)).resolves.toMatchObject([
+        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toMatchObject([
             { queue: ERankedQueue.SOLO, tier: 'EMERALD', division: 'II', leaguePoints: 47 },
         ]);
 
-        await expect(repository.findReadAt('p-1', EPlatformRegion.EUW)).resolves.toEqual(readAt);
+        await expect(repository.findReadAt(PUUID, EPlatformRegion.EUW)).resolves.toEqual(readAt);
     });
 
     it('drops a queue the player no longer appears in', async () => {
         const solo = {
-            puuid: 'p-1',
+            puuid: PUUID,
             region: EPlatformRegion.EUW,
             queue: ERankedQueue.SOLO,
             tier: 'EMERALD',
@@ -99,18 +104,18 @@ describeWithDatabase('SummonerRankRepository', () => {
         };
         const flex = { ...solo, queue: ERankedQueue.FLEX, tier: 'PLATINUM', division: 'IV' };
 
-        await repository.replaceAll('p-1', EPlatformRegion.EUW, [solo, flex], new Date());
-        await repository.replaceAll('p-1', EPlatformRegion.EUW, [solo], new Date());
+        await repository.replaceAll(PUUID, EPlatformRegion.EUW, [solo, flex], new Date());
+        await repository.replaceAll(PUUID, EPlatformRegion.EUW, [solo], new Date());
 
-        await expect(repository.findByPuuid('p-1', EPlatformRegion.EUW)).resolves.toHaveLength(1);
+        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toHaveLength(1);
     });
 
     it('dates the read even when the player is ranked nowhere', async () => {
         const readAt = new Date('2026-09-18T11:00:00.000Z');
 
-        await repository.replaceAll('p-1', EPlatformRegion.EUW, [], readAt);
+        await repository.replaceAll(PUUID, EPlatformRegion.EUW, [], readAt);
 
-        await expect(repository.findReadAt('p-1', EPlatformRegion.EUW)).resolves.toEqual(readAt);
-        await expect(repository.findByPuuid('p-1', EPlatformRegion.EUW)).resolves.toEqual([]);
+        await expect(repository.findReadAt(PUUID, EPlatformRegion.EUW)).resolves.toEqual(readAt);
+        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toEqual([]);
     });
 });

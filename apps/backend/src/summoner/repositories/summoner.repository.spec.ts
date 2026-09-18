@@ -1,4 +1,5 @@
 import { EPlatformRegion } from '@lynf/shared';
+import { and, eq, like } from 'drizzle-orm';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
@@ -35,13 +36,19 @@ describeWithDatabase('SummonerRepository', () => {
         await pool.end();
     });
 
+    // Own puuid prefix so this suite's cleanup never touches fixtures another
+    // database-backed suite left in the shared test database.
+    const PUUID_PREFIX = 'summoner-repo-';
+    const PUUID_1 = `${PUUID_PREFIX}p-1`;
+    const PUUID_2 = `${PUUID_PREFIX}p-2`;
+
     beforeEach(async () => {
         // Their Riot IDs go with them.
-        await database.delete(summoners);
+        await database.delete(summoners).where(like(summoners.puuid, `${PUUID_PREFIX}%`));
     });
 
     const profile = {
-        puuid: 'p-1',
+        puuid: PUUID_1,
         region: EPlatformRegion.EUW,
         gameName: 'Faker',
         tagLine: 'KR1',
@@ -66,7 +73,7 @@ describeWithDatabase('SummonerRepository', () => {
         await repository.save(profile, FAKER_ON_EUW);
 
         await expect(repository.findByRiotId(FAKER_ON_EUW)).resolves.toMatchObject({
-            puuid: 'p-1',
+            puuid: PUUID_1,
             summonerLevel: 500,
         });
     });
@@ -80,7 +87,7 @@ describeWithDatabase('SummonerRepository', () => {
                 gameName: 'FAKER',
                 tagLine: 'kr1',
             }),
-        ).resolves.toMatchObject({ puuid: 'p-1' });
+        ).resolves.toMatchObject({ puuid: PUUID_1 });
     });
 
     it('finds a profile Riot names differently from the search, under both names', async () => {
@@ -107,7 +114,12 @@ describeWithDatabase('SummonerRepository', () => {
         await repository.save(profile, FAKER_ON_EUW);
         await repository.save({ ...profile, summonerLevel: 501 }, FAKER_ON_EUW);
 
-        const rows = await database.select().from(summoners);
+        // Scoped to this suite's own puuids: the shared table may also hold another
+        // database-backed suite's fixture rows when both run in parallel.
+        const rows = await database
+            .select()
+            .from(summoners)
+            .where(like(summoners.puuid, `${PUUID_PREFIX}%`));
         const riotIds = await database.select().from(summonerRiotIds);
 
         expect(rows).toHaveLength(1);
@@ -133,10 +145,10 @@ describeWithDatabase('SummonerRepository', () => {
 
     it('follows a Riot ID to the account that holds it now', async () => {
         await repository.save(profile, FAKER_ON_EUW);
-        await repository.save({ ...profile, puuid: 'p-2' }, FAKER_ON_EUW);
+        await repository.save({ ...profile, puuid: PUUID_2 }, FAKER_ON_EUW);
 
         await expect(repository.findByRiotId(FAKER_ON_EUW)).resolves.toMatchObject({
-            puuid: 'p-2',
+            puuid: PUUID_2,
         });
     });
 
@@ -156,7 +168,10 @@ describeWithDatabase('SummonerRepository', () => {
             FAKER_ON_EUW,
         );
 
-        const [row] = await database.select().from(summoners);
+        const [row] = await database
+            .select()
+            .from(summoners)
+            .where(and(eq(summoners.puuid, profile.puuid), eq(summoners.region, profile.region)));
 
         // Without this, a refreshed profile would keep its stale date and be served as
         // fresh-looking data that is actually old.
