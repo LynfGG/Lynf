@@ -16,6 +16,9 @@ export const environmentSchema = z.object({
 
     /** How long a stored profile is considered fresh before Riot is asked again. */
     SUMMONER_PROFILE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+
+    /** How long stored ranked standings are considered fresh before Riot is asked again. */
+    SUMMONER_RANKS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
