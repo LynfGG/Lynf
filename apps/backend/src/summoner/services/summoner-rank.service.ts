@@ -38,7 +38,7 @@ export class SummonerRankService {
 
         if (readAt && this.isFresh(readAt)) {
             const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
-            return stored.map(toRank);
+            return sortByQueue(stored.map(toRank));
         }
 
         try {
@@ -51,7 +51,7 @@ export class SummonerRankService {
                 new Date(),
             );
 
-            return saved.map(toRank);
+            return sortByQueue(saved.map(toRank));
         } catch (error) {
             // Nothing was ever read, so there is no honest fallback: answering "unranked"
             // to a Master player would be a lie. A failure that is not Riot's — a database
@@ -69,7 +69,7 @@ export class SummonerRankService {
             );
 
             const stored = await this.summonerRankRepository.findByPuuid(puuid, region);
-            return stored.map(toRank);
+            return sortByQueue(stored.map(toRank));
         }
     }
 
@@ -107,4 +107,14 @@ function toRank(row: SummonerRankRow): SummonerRank {
         wins: row.wins,
         losses: row.losses,
     };
+}
+
+/**
+ * Both the stored-standings path and the Riot-refresh path reach this, so the two agree
+ * on an order instead of each leaving it to storage or Riot's own response order.
+ */
+function sortByQueue(ranks: SummonerRank[]): SummonerRank[] {
+    return [...ranks].sort(
+        (a, b) => RANKED_QUEUES.indexOf(a.queue) - RANKED_QUEUES.indexOf(b.queue),
+    );
 }

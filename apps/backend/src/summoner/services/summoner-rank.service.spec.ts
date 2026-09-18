@@ -148,6 +148,44 @@ describe('SummonerRankService', () => {
         ]);
     });
 
+    it('orders standings by queue regardless of storage or Riot order', async () => {
+        repository.findReadAt.mockResolvedValue(readSecondsAgo(TTL_SECONDS - 1));
+        repository.findByPuuid.mockResolvedValue([
+            { ...STORED, queue: ERankedQueue.FLEX },
+            { ...STORED, queue: ERankedQueue.SOLO },
+        ]);
+
+        const ranks = await service.findByRiotId(LOOKUP);
+
+        expect(ranks.map((rank) => rank.queue)).toEqual([ERankedQueue.SOLO, ERankedQueue.FLEX]);
+    });
+
+    it('orders a freshly refreshed standing the same way, whatever order Riot answered in', async () => {
+        repository.findReadAt.mockResolvedValue(null);
+        riot.getLeagueEntriesByPuuid.mockResolvedValue([
+            {
+                queueType: ERankedQueue.FLEX,
+                tier: 'PLATINUM',
+                rank: 'IV',
+                leaguePoints: 12,
+                wins: 9,
+                losses: 7,
+            },
+            {
+                queueType: ERankedQueue.SOLO,
+                tier: 'EMERALD',
+                rank: 'II',
+                leaguePoints: 47,
+                wins: 68,
+                losses: 54,
+            },
+        ]);
+
+        const ranks = await service.findByRiotId(LOOKUP);
+
+        expect(ranks.map((rank) => rank.queue)).toEqual([ERankedQueue.SOLO, ERankedQueue.FLEX]);
+    });
+
     it('records an unranked player so Riot is not asked again immediately', async () => {
         repository.findReadAt.mockResolvedValue(null);
         riot.getLeagueEntriesByPuuid.mockResolvedValue([]);
