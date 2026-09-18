@@ -162,6 +162,14 @@ describe('SummonerService', () => {
         });
     });
 
+    it('treats a stored profile aged exactly at the TTL as stale', async () => {
+        repository.findByRiotId.mockResolvedValue(rowAgedSeconds(TTL_SECONDS));
+
+        await service.findByRiotId(LOOKUP);
+
+        expect(riot.getAccountByRiotId).toHaveBeenCalledWith(LOOKUP);
+    });
+
     it('exposes updatedAt as an ISO string, not a Date', async () => {
         repository.findByRiotId.mockResolvedValue(rowAgedSeconds(0));
 
