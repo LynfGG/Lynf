@@ -8,5 +8,5 @@ import { useTranslation } from 'react-i18next';
 export default function RiotLegalNotice() {
     const { t } = useTranslation();
 
-    return <p className="text-xs leading-relaxed text-slate-500">{t('legal.riot')}</p>;
+    return <p className="text-xs leading-relaxed text-ink-faint">{t('legal.riot')}</p>;
 }

@@ -8,20 +8,22 @@ export default function RootLayout() {
     const { t } = useTranslation();
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200">
-            <header className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div className="flex min-h-screen flex-col bg-ground text-ink">
+            <header className="flex items-center justify-between border-b border-line px-5 py-4">
                 <div>
-                    <h1 className="text-lg font-bold text-slate-100">{t('appName')}</h1>
-                    <p className="text-xs text-slate-500">{t('tagline')}</p>
+                    <h1 className="font-display text-lg uppercase tracking-[3px] text-gold">
+                        {t('appName')}
+                    </h1>
+                    <p className="text-xs text-ink-muted">{t('tagline')}</p>
                 </div>
                 <LanguageSwitcher />
             </header>
 
-            <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-8">
+            <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
                 <Outlet />
             </main>
 
-            <footer className="border-t border-slate-800 px-5 py-6">
+            <footer className="border-t border-line px-5 py-6">
                 <RiotLegalNotice />
             </footer>
         </div>
