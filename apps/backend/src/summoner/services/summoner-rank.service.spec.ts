@@ -48,7 +48,6 @@ const STORED_SUMMONER: SummonerRow = {
     profileIconId: 10,
     summonerLevel: 500,
     updatedAt: readSecondsAgo(60 * 60 * 24 * 30),
-    ranksUpdatedAt: null,
 };
 
 describe('SummonerRankService', () => {

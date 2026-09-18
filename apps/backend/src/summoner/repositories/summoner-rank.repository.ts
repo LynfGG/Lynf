@@ -5,28 +5,28 @@ import { and, eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../database/database.module';
 import {
     summonerRanks,
-    summoners,
     type NewSummonerRankRow,
     type SummonerRankRow,
 } from '../../database/schema/index';
+import { SummonerResourceReadRepository } from './summoner-resource-read.repository';
+
+/** The name ranked standings are read and dated under in `summoner_resource_reads`. */
+const RANKS_RESOURCE = 'ranks';
 
 /** Every ranked-standing query lives here, and nothing else does. */
 @Injectable()
 export class SummonerRankRepository {
-    constructor(@Inject(DATABASE) private readonly database: Database) {}
+    constructor(
+        @Inject(DATABASE) private readonly database: Database,
+        private readonly resourceReadRepository: SummonerResourceReadRepository,
+    ) {}
 
     /**
      * When the standings of this account were last read from Riot, or null when they never
-     * were. It is stored on the summoner: a player ranked nowhere has no rank row, and
-     * that answer must be datable too.
+     * were. A player ranked nowhere has no rank row, and that answer must be datable too.
      */
     async findReadAt(puuid: string, region: EPlatformRegion): Promise<Date | null> {
-        const [row] = await this.database
-            .select({ readAt: summoners.ranksUpdatedAt })
-            .from(summoners)
-            .where(and(eq(summoners.puuid, puuid), eq(summoners.region, region)));
-
-        return row?.readAt ?? null;
+        return this.resourceReadRepository.findReadAt(puuid, region, RANKS_RESOURCE);
     }
 
     async findByPuuid(puuid: string, region: EPlatformRegion): Promise<SummonerRankRow[]> {
@@ -37,8 +37,7 @@ export class SummonerRankRepository {
     }
 
     /**
-     * Replaces every standing stored for one account on one platform, and dates the read
-     * on the summoner itself.
+     * Replaces every standing stored for one account on one platform, and dates the read.
      *
      * It replaces rather than merges: a player who stopped playing a queue disappears
      * from it at Riot, and keeping the old row would show a rank that no longer exists.
@@ -60,10 +59,13 @@ export class SummonerRankRepository {
                 ? await transaction.insert(summonerRanks).values(ranks).returning()
                 : [];
 
-            await transaction
-                .update(summoners)
-                .set({ ranksUpdatedAt: readAt })
-                .where(and(eq(summoners.puuid, puuid), eq(summoners.region, region)));
+            await this.resourceReadRepository.write(
+                puuid,
+                region,
+                RANKS_RESOURCE,
+                readAt,
+                transaction,
+            );
 
             return inserted;
         });

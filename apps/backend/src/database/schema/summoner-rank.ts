@@ -5,9 +5,10 @@ import { summoners } from './summoner';
 /**
  * A player's standing in one ranked queue, as last seen from Riot.
  *
- * Rows are a cache. Their freshness is not stored here but on the summoner
- * (`ranks_updated_at`): a player who is ranked nowhere has no row at all, and the
- * absence of rows must itself be datable, or Riot would be asked again on every view.
+ * Rows are a cache. Their freshness is not stored here but in
+ * `summoner_resource_reads` (resource `'ranks'`): a player who is ranked nowhere has no
+ * row at all, and the absence of rows must itself be datable, or Riot would be asked
+ * again on every view.
  */
 export const summonerRanks = pgTable(
     'summoner_ranks',

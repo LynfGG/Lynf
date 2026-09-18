@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import * as schema from '../../database/schema';
 import { summoners } from '../../database/schema';
 import { SummonerRankRepository } from './summoner-rank.repository';
+import { SummonerResourceReadRepository } from './summoner-resource-read.repository';
 
 /**
  * Repositories are tested against a real database — stubbing one only proves the
@@ -29,7 +30,10 @@ describeWithDatabase('SummonerRankRepository', () => {
     beforeAll(async () => {
         pool = new Pool({ connectionString: DATABASE_URL });
         database = drizzle(pool, { schema });
-        repository = new SummonerRankRepository(database);
+        repository = new SummonerRankRepository(
+            database,
+            new SummonerResourceReadRepository(database),
+        );
     });
 
     afterAll(async () => {
@@ -63,7 +67,7 @@ describeWithDatabase('SummonerRankRepository', () => {
         await expect(repository.findReadAt(PUUID, EPlatformRegion.EUW)).resolves.toBeNull();
     });
 
-    it('stores standings and dates the read on the summoner', async () => {
+    it('stores standings and dates the read', async () => {
         const readAt = new Date('2026-09-18T10:00:00.000Z');
 
         await repository.replaceAll(

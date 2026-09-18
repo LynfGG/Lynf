@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import * as schema from '../../database/schema';
 import { summonerRiotIds, summoners } from '../../database/schema';
 import { SummonerRepository } from './summoner.repository';
+import { SummonerResourceReadRepository } from './summoner-resource-read.repository';
 
 /**
  * Repositories are tested against a real database — stubbing one only proves the
@@ -155,24 +156,19 @@ describeWithDatabase('SummonerRepository', () => {
         });
     });
 
-    it('leaves ranksUpdatedAt untouched when a profile is saved again', async () => {
+    it('leaves the ranks read date untouched when a profile is saved again', async () => {
+        const resourceReadRepository = new SummonerResourceReadRepository(database);
         const ranksReadAt = new Date('2026-09-01T00:00:00Z');
         await repository.save(profile, FAKER_ON_EUW);
-        await database
-            .update(summoners)
-            .set({ ranksUpdatedAt: ranksReadAt })
-            .where(and(eq(summoners.puuid, profile.puuid), eq(summoners.region, profile.region)));
+        await resourceReadRepository.write(profile.puuid, profile.region, 'ranks', ranksReadAt);
 
         await repository.save({ ...profile, summonerLevel: 501 }, FAKER_ON_EUW);
 
-        const [row] = await database
-            .select()
-            .from(summoners)
-            .where(and(eq(summoners.puuid, profile.puuid), eq(summoners.region, profile.region)));
-
         // A profile refresh must never reset the ranks read date: doing so would make the
         // rank route believe the standings were never read, and call Riot on every view.
-        expect(row.ranksUpdatedAt).toEqual(ranksReadAt);
+        await expect(
+            resourceReadRepository.findReadAt(profile.puuid, profile.region, 'ranks'),
+        ).resolves.toEqual(ranksReadAt);
     });
 
     it('refreshes the timestamp when a later save does not provide one', async () => {
