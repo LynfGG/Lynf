@@ -107,7 +107,9 @@ describeWithDatabase('SummonerRankRepository', () => {
         await repository.replaceAll(PUUID, EPlatformRegion.EUW, [solo, flex], new Date());
         await repository.replaceAll(PUUID, EPlatformRegion.EUW, [solo], new Date());
 
-        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toHaveLength(1);
+        await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toMatchObject([
+            { queue: ERankedQueue.SOLO, tier: 'EMERALD', division: 'II' },
+        ]);
     });
 
     it('dates the read even when the player is ranked nowhere', async () => {
