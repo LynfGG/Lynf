@@ -85,7 +85,14 @@ describeWithDatabase('SummonerRankRepository', () => {
         );
 
         await expect(repository.findByPuuid(PUUID, EPlatformRegion.EUW)).resolves.toMatchObject([
-            { queue: ERankedQueue.SOLO, tier: 'EMERALD', division: 'II', leaguePoints: 47 },
+            {
+                queue: ERankedQueue.SOLO,
+                tier: 'EMERALD',
+                division: 'II',
+                leaguePoints: 47,
+                wins: 68,
+                losses: 54,
+            },
         ]);
 
         await expect(repository.findReadAt(PUUID, EPlatformRegion.EUW)).resolves.toEqual(readAt);
