@@ -1,6 +1,7 @@
 import type { MatchParticipantSummary } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 
+import { isAheadOnMeasure } from '../../utils/lane-duel';
 import { formatNumber, formatSignedNumber } from '../../utils/match-format';
 
 /** A non-tied gap never draws thinner than this share of its half of the track. */
@@ -51,7 +52,7 @@ function DuelStatRow({
               Math.max(Math.sqrt(gapRatio) * MAX_GAP_WIDTH_PERCENT, MIN_GAP_WIDTH_PERCENT),
               MAX_GAP_WIDTH_PERCENT,
           );
-    const playerAhead = diff > 0;
+    const playerAhead = isAheadOnMeasure(playerValue, opponentValue);
     const gapTone = isTie ? 'text-ink-muted' : playerAhead ? 'text-win' : 'text-loss';
 
     return (
