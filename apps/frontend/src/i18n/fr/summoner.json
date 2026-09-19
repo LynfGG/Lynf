@@ -50,6 +50,28 @@
             "viewDetails": "Voir le détail de la partie : {{champion}}, {{result}}, {{time}}",
             "hideDetails": "Masquer le détail de la partie : {{champion}}, {{result}}, {{time}}",
             "unknownChampion": "Champion {{id, number}}",
+            "filterEmpty": "Aucune partie pour cette file.",
+            "filters": {
+                "all": "Toutes les files"
+            },
+            "summary": {
+                "laneDuels": {
+                    "label": "Duels de couloir gagnés",
+                    "value": "{{won, number}} / {{eligible, number}}"
+                },
+                "record": {
+                    "label": "Bilan",
+                    "value": "{{wins, number}} gagnées – {{losses, number}} perdues"
+                },
+                "kda": {
+                    "label": "KDA moyen",
+                    "value": "{{kills, number}} / {{deaths, number}} / {{assists, number}}"
+                },
+                "topChampions": {
+                    "label": "Les plus joués",
+                    "games": "{{count, number}} parties"
+                }
+            },
             "result": {
                 "win": "Victoire",
                 "loss": "Défaite"
