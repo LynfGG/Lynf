@@ -81,7 +81,10 @@ describe('RiotExternal', () => {
         global.fetch = fetchMock as unknown as typeof fetch;
 
         // What the external logs is part of its behaviour: it is asserted, and kept out of
-        // the test output.
+        // the test output. The per-call log line is not asserted here — it exists to make
+        // Riot's quota countable from real logs, not from a unit test — but it is just as
+        // noisy, so it is silenced the same way.
+        jest.spyOn(Logger.prototype, 'log').mockImplementation();
         errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation();
         warnLog = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     });

@@ -141,6 +141,11 @@ export class RiotExternal {
     }
 
     private async request<T>(url: string, notFoundMessage: string) {
+        // Every Riot call passes through here, and only here: this is what makes the
+        // quota Riot spends countable from the logs alone, without instrumenting each
+        // caller — the one number the match history tranche lives or dies by.
+        this.logger.log(`Riot call: ${url}`);
+
         let response: Response;
 
         try {
