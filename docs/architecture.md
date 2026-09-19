@@ -95,7 +95,17 @@ shapes one-to-one:
   size (Arena's eight teams of two). Deliberately **not** foreign-keyed to `summoners`, unlike
   every other puuid-bearing table here: the other nine players in a match are not accounts Lynf
   tracks, and requiring their presence in `summoners` would force creating a never-refreshed,
-  never-looked-up profile for every opponent ever seen in a match.
+  never-looked-up profile for every opponent ever seen in a match. Its `runes` column is a
+  nullable `jsonb`: a nested structure never queried by its insides in SQL, and nullable because
+  the matches ingested before this column existed will never gain one — a match is immutable, so
+  it is never re-read from Riot just to backfill a field it predates.
+- **`match_timelines`** — one row per match, holding the four families extracted from `match-v5`'s
+  timeline (per-minute frames, skill level ups, item events, kills), each its own `jsonb` column.
+  Keyed and foreign-keyed on `matchId`, cascading with its match. No `updatedAt`, no TTL and no
+  freshness check at all — not merely "not yet expired" like `matches`, but inapplicable: a
+  timeline is immutable the instant it is extracted, so its mere presence is the only fact that
+  matters. `ITEM_UNDO` is resolved away before a row is ever written, so an undone purchase or sale
+  never reaches storage.
 
 ### Database access
 
@@ -203,6 +213,20 @@ This refines the original intention, recorded when match history was designed, t
 themselves, but left an open question the code had to answer once it was built: how does the
 application ever learn that a player has queued up again? `SUMMONER_MATCHES_TTL_SECONDS` is that
 answer — it governs when the _list_ is re-read, never whether an already-stored match is re-read.
+
+### The timeline: never at ingestion, once per match forever
+
+`match-v5`'s timeline is the heaviest single call this application makes — 755 KB for a 28-minute
+game — so it is never fetched while a profile or its match list loads, only when a caller
+explicitly asks for one match's timeline. `MatchTimelineService` is storage-first the same way
+`SummonerRankService` was made to be in the ranks fix: `match_timelines` is checked before Riot is
+asked anything, and because a timeline cannot go stale once it exists, `withFreshnessFallback` does
+not apply here at all — there is no TTL to fall back from, only "already extracted" or not yet.
+
+Of the 755 KB, what is kept and stored is roughly a sixth of that as JSON text (measured on a real
+match), and smaller still once Postgres's own `jsonb` compression is applied on disk. Positions,
+live champion stats and per-event damage breakdowns are discarded at extraction; there is no
+per-minute damage series, because Riot's timeline does not report one.
 
 ### Validation
 
