@@ -310,7 +310,7 @@ describe('SummonerMatchService', () => {
             );
         });
 
-        it('stops ingestion after a rate limit, without losing what was already fetched', async () => {
+        it('stops ingestion after a rate limit, without losing what was already fetched, and leaves the list undated', async () => {
             riot.getMatchIdsByPuuid.mockResolvedValue(['EUW1_1', 'EUW1_2', 'EUW1_3']);
             riot.getMatchById
                 .mockResolvedValueOnce(rawMatch('EUW1_1'))
@@ -328,10 +328,27 @@ describe('SummonerMatchService', () => {
             );
             // The third match is never even attempted once the loop stops.
             expect(riot.getMatchById).toHaveBeenCalledTimes(2);
-            // The list read is still dated: it was the list call, not a match fetch,
-            // that succeeded.
-            expect(repository.markListRead).toHaveBeenCalled();
+            // The list is deliberately left undated: ingestion did not run to
+            // completion, so the next view retries the remainder right away instead of
+            // waiting out the freshness window on an incomplete answer.
+            expect(repository.markListRead).not.toHaveBeenCalled();
             expect(warnLog).toHaveBeenCalledWith(expect.stringContaining('EUW1_2'));
+        });
+
+        it('does not date the list, and does not report an empty history, when every match fetch is rate limited on a never-seen player', async () => {
+            // The scenario the whole-branch review flagged: a player never seen before,
+            // whose very first match-detail call is rate limited before anything is
+            // stored. Dating the list here would have `buildSummaries` answer "no match
+            // history" — an answer, not an absence — for the whole freshness window.
+            riot.getMatchIdsByPuuid.mockResolvedValue(['EUW1_1', 'EUW1_2']);
+            riot.getMatchById.mockRejectedValue(
+                new HttpException('rate limited', HttpStatus.TOO_MANY_REQUESTS),
+            );
+
+            await expect(service.findByRiotId(LOOKUP)).resolves.toEqual([]);
+
+            expect(repository.insertMatch).not.toHaveBeenCalled();
+            expect(repository.markListRead).not.toHaveBeenCalled();
         });
 
         it('never hides a failure that is not Riot itself, and does not date the list', async () => {

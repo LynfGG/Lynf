@@ -79,15 +79,24 @@ export class SummonerMatchService {
      * storage, never the whole list blindly.
      *
      * Per-match failures are never allowed to undo matches already fetched in this same
-     * run: each match is stored the moment it is fetched, not batched until the end.
-     * A rate limit reached partway stops the loop rather than throwing — what is
-     * already stored stays stored, and the rest is retried on the next refresh, once
-     * the match list itself is stale again.
+     * run: each match is stored the moment it is fetched, not batched until the end. A
+     * rate limit reached partway stops the loop rather than throwing — what is already
+     * stored stays stored — but the list is then deliberately left undated. Dating it
+     * regardless of how far ingestion got would mean a player's very first view, whose
+     * very first match-detail call gets rate limited, is left with zero matches stored
+     * and a list marked fresh for the whole TTL: `buildSummaries` would keep answering
+     * "no match history" — presented everywhere else as an answer, not an absence — for
+     * as long as `SUMMONER_MATCHES_TTL_SECONDS` lasts, on nothing but a transient 429.
+     * Leaving the list undated costs one extra id-list call on the very next view
+     * instead, which is the honest trade: a partial failure must not disguise itself as
+     * a complete result.
      */
     private async ingest(puuid: string, region: EPlatformRegion): Promise<void> {
         const ids = await this.riotExternal.getMatchIdsByPuuid(puuid, region, MATCH_HISTORY_LIMIT);
         const known = await this.matchRepository.findExistingMatchIds(ids);
         const unknown = ids.filter((id) => !known.has(id));
+
+        let ranToCompletion = true;
 
         // Fetched one at a time, deliberately: a development key is limited per second
         // as much as per window, and firing every unknown match at once would risk a
@@ -102,17 +111,20 @@ export class SummonerMatchService {
                     throw error;
                 }
 
+                ranToCompletion = false;
                 this.logger.warn(
-                    `Stopped ingesting matches for ${puuid} on ${region} at ${matchId} (${error.getStatus()}). ${unknown.length} matches were unknown; matches already fetched this run are kept, the rest will be retried later.`,
+                    `Stopped ingesting matches for ${puuid} on ${region} at ${matchId} (${error.getStatus()}). ${unknown.length} matches were unknown; matches already fetched this run are kept, the list is left undated so the rest is retried on the next view.`,
                 );
                 break;
             }
         }
 
-        // The list itself was successfully read, whatever happened to individual
-        // matches after that — dating it is what keeps the next view from asking Riot
-        // again before there is any chance a new match exists.
-        await this.matchRepository.markListRead(puuid, region, new Date());
+        // Dating the list is only honest once every unknown id has actually been
+        // attempted: only then does "no new match" or "no match history" mean what it
+        // says, rather than "Riot stopped answering partway through".
+        if (ranToCompletion) {
+            await this.matchRepository.markListRead(puuid, region, new Date());
+        }
     }
 
     private async buildSummaries(puuid: string): Promise<MatchSummary[]> {
