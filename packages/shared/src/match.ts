@@ -7,15 +7,23 @@
 export const MATCH_HISTORY_LIMIT = 20;
 
 /**
- * One side of a match, as far as the match list needs it. The full ten-player
- * breakdown — every participant, not just the tracked player and their lane opponent —
- * is a later tranche's job.
+ * One participant of a match, in every place the match detail needs one: the tracked
+ * player, their lane opponent, or any of the other players shown in the two-team
+ * breakdown.
  *
  * `championId` is Riot's numeric id, matched to a portrait the same way champion
  * mastery already is: Data Dragon's catalogue, not this contract's job. `items` always
  * has seven entries, trinket included, in Riot's own slot order; an empty slot is `0`.
+ * `teamPosition` is empty on some queues — arcade modes among them — and on matches old
+ * enough to predate it; `riotIdGameName`/`riotIdTagline` are the name Riot reported for
+ * this match, not a live lookup.
  */
 export type MatchParticipantSummary = {
+    puuid: string;
+    riotIdGameName: string;
+    riotIdTagline: string;
+    teamId: number;
+    teamPosition: string;
     championId: number;
     win: boolean;
     kills: number;
@@ -23,6 +31,7 @@ export type MatchParticipantSummary = {
     assists: number;
     creepScore: number;
     goldEarned: number;
+    totalDamageDealtToChampions: number;
     items: number[];
 };
 
@@ -34,6 +43,12 @@ export type MatchParticipantSummary = {
  * on matches old enough to predate it, and that is not an error: a match is never
  * hidden for lacking a duel, so `opponent` is simply `null` and the card falls back to
  * its plain form.
+ *
+ * `participants` is everyone in the match, the tracked player and their opponent
+ * included — ten on Summoner's Rift, a different count on some other modes (Arena's
+ * eighteen, for instance). It is what the expanded two-team breakdown is built from;
+ * fetching it costs no extra Riot call, since `match-v5` already reports every
+ * participant and the match history tranche already stored them all.
  */
 export type MatchSummary = {
     matchId: string;
@@ -44,4 +59,5 @@ export type MatchSummary = {
     endedAt: string;
     player: MatchParticipantSummary;
     opponent: MatchParticipantSummary | null;
+    participants: MatchParticipantSummary[];
 };
