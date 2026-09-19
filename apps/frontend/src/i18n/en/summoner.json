@@ -41,8 +41,9 @@
             "creepScoreDiff": "{{value}} CS",
             "goldDiff": "{{value}} gold",
             "vs": "vs",
-            "viewDetails": "View match details",
-            "detailsComingSoon": "Match details are coming soon",
+            "viewDetails": "View match details: {{champion}}, {{result}}, {{time}}",
+            "hideDetails": "Hide match details: {{champion}}, {{result}}, {{time}}",
+            "unknownChampion": "Champion {{id, number}}",
             "result": {
                 "win": "Victory",
                 "loss": "Defeat"
@@ -56,6 +57,21 @@
                 "clash": "Clash",
                 "urf": "URF",
                 "unknown": "Queue {{id, number}}"
+            },
+            "detail": {
+                "duel": {
+                    "heading": "Lane duel",
+                    "creepScore": "Minions",
+                    "gold": "Gold",
+                    "damage": "Damage to champions",
+                    "gap": "Gap: {{value}}",
+                    "even": "Even"
+                },
+                "teams": {
+                    "heading": "Teams",
+                    "you": "You",
+                    "damage": "Damage to champions"
+                }
             }
         }
     },

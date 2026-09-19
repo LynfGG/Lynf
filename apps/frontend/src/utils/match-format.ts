@@ -33,6 +33,11 @@ export function formatSignedNumber(value: number, language: string): string {
     return new Intl.NumberFormat(language, { signDisplay: 'exceptZero' }).format(value);
 }
 
+/** `13,450`, grouped the way the active language expects. */
+export function formatNumber(value: number, language: string): string {
+    return new Intl.NumberFormat(language).format(value);
+}
+
 /** "3 hours ago", in whichever of the two supported languages is active. */
 export function formatRelativeTime(iso: string, language: string): string {
     const elapsedSeconds = (Date.now() - new Date(iso).getTime()) / 1000;

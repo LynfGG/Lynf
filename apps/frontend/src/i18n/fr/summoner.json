@@ -41,8 +41,9 @@
             "creepScoreDiff": "{{value}} CS",
             "goldDiff": "{{value}} or",
             "vs": "vs",
-            "viewDetails": "Voir le détail de la partie",
-            "detailsComingSoon": "Le détail de la partie arrive bientôt",
+            "viewDetails": "Voir le détail de la partie : {{champion}}, {{result}}, {{time}}",
+            "hideDetails": "Masquer le détail de la partie : {{champion}}, {{result}}, {{time}}",
+            "unknownChampion": "Champion {{id, number}}",
             "result": {
                 "win": "Victoire",
                 "loss": "Défaite"
@@ -56,6 +57,21 @@
                 "clash": "Clash",
                 "urf": "URF",
                 "unknown": "File {{id, number}}"
+            },
+            "detail": {
+                "duel": {
+                    "heading": "Duel de couloir",
+                    "creepScore": "Sbires",
+                    "gold": "Or",
+                    "damage": "Dégâts aux champions",
+                    "gap": "Écart : {{value}}",
+                    "even": "Égalité"
+                },
+                "teams": {
+                    "heading": "Équipes",
+                    "you": "Vous",
+                    "damage": "Dégâts aux champions"
+                }
             }
         }
     },

@@ -9,6 +9,7 @@ import {
     formatRelativeTime,
     formatSignedNumber,
 } from '../../utils/match-format';
+import MatchDetails from './match-details';
 
 const PLAYER_PORTRAIT_SIZE = 48;
 const OPPONENT_PORTRAIT_SIZE = 36;
@@ -18,9 +19,12 @@ type MatchCardProps = {
     match: MatchSummary;
     version: string | undefined;
     catalogue: ChampionCatalogue | undefined;
+    viewedPuuid: string;
+    isExpanded: boolean;
+    onToggleExpand: () => void;
 };
 
-function ChampionPortrait({
+export function ChampionPortrait({
     championId,
     size,
     version,
@@ -54,7 +58,10 @@ function ChampionPortrait({
     );
 }
 
-function ItemRow({ items, version }: Readonly<{ items: number[]; version: string | undefined }>) {
+export function ItemRow({
+    items,
+    version,
+}: Readonly<{ items: number[]; version: string | undefined }>) {
     return (
         <ul className="flex gap-1" aria-hidden="true">
             {items.map((itemId, slot) => (
@@ -97,7 +104,14 @@ function DiffBadge({ value, label }: Readonly<{ value: number; label: string }>)
  * to predate the field. That is never a reason to hide the match itself — only the
  * duel column is missing, and the row still reads on its own.
  */
-export default function MatchCard({ match, version, catalogue }: Readonly<MatchCardProps>) {
+export default function MatchCard({
+    match,
+    version,
+    catalogue,
+    viewedPuuid,
+    isExpanded,
+    onToggleExpand,
+}: Readonly<MatchCardProps>) {
     const { t, i18n } = useTranslation('summoner');
 
     const queueKey = MATCH_QUEUE_NAMES[match.queueId];
@@ -117,9 +131,19 @@ export default function MatchCard({ match, version, catalogue }: Readonly<MatchC
             assists: participant.assists,
         });
 
+    const relativeTime = formatRelativeTime(match.endedAt, i18n.language);
+    const championName =
+        catalogue?.get(match.player.championId)?.name ??
+        t('profile.matches.unknownChampion', { id: match.player.championId });
+    const detailsId = `match-details-${match.matchId}`;
+    const toggleLabel = t(
+        isExpanded ? 'profile.matches.hideDetails' : 'profile.matches.viewDetails',
+        { champion: championName, result: resultLabel, time: relativeTime },
+    );
+
     return (
         <li
-            className={`flex flex-col gap-3 rounded-xl border border-line border-l-4 bg-surface p-3 sm:flex-row sm:items-center sm:gap-4 ${resultTone}`}
+            className={`flex flex-col gap-3 rounded-xl border border-line border-l-4 bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 ${resultTone}`}
         >
             <div className="flex min-w-0 flex-1 items-center gap-3">
                 <ChampionPortrait
@@ -145,7 +169,7 @@ export default function MatchCard({ match, version, catalogue }: Readonly<MatchC
                         <span aria-hidden="true">·</span>
                         <span>{formatMatchDuration(match.durationSeconds)}</span>
                         <span aria-hidden="true">·</span>
-                        <span>{formatRelativeTime(match.endedAt, i18n.language)}</span>
+                        <span>{relativeTime}</span>
                     </div>
 
                     <span className="text-sm font-semibold text-ink">{kda(match.player)}</span>
@@ -198,13 +222,25 @@ export default function MatchCard({ match, version, catalogue }: Readonly<MatchC
 
             <button
                 type="button"
-                disabled
-                aria-label={t('profile.matches.viewDetails')}
-                title={t('profile.matches.detailsComingSoon')}
-                className="hidden shrink-0 cursor-not-allowed self-center text-lg text-ink-muted opacity-60 sm:block"
+                aria-expanded={isExpanded}
+                aria-controls={detailsId}
+                aria-label={toggleLabel}
+                onClick={onToggleExpand}
+                className="shrink-0 self-center text-lg text-ink-muted transition-colors hover:text-ink"
             >
-                ›
+                <span aria-hidden="true" className={isExpanded ? 'inline-block rotate-90' : ''}>
+                    ›
+                </span>
             </button>
+
+            <div id={detailsId} hidden={!isExpanded} className="basis-full">
+                <MatchDetails
+                    match={match}
+                    version={version}
+                    catalogue={catalogue}
+                    viewedPuuid={viewedPuuid}
+                />
+            </div>
         </li>
     );
 }
