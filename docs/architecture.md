@@ -63,6 +63,40 @@ answer.
 The Riot external lives in its own module rather than inside a domain module, because profiles,
 match history and live games will all reach for it.
 
+### Data model
+
+Seven tables, each earning its place for a specific reason rather than mirroring Riot's response
+shapes one-to-one:
+
+- **`summoners`** — one row per account and platform: profile icon, level, and `updatedAt`, the
+  cache's own age. A puuid identifies an account on every platform, but the icon and level belong
+  to one, hence the platform in the key.
+- **`summoner_riot_ids`** — every Riot ID a profile has ever been found under, on one platform.
+  Riot's lookup is forgiving — searching `Caps#EUW` returns the account Riot spells `Cäps#EUW` —
+  so both the searched spelling and Riot's own are recorded; matching against Riot's spelling
+  alone would miss the stored profile every time a player is searched as they typed it, fallback
+  included.
+- **`summoner_ranks`** — one row per queue a player is ranked in. A player ranked nowhere has no
+  rows at all, which is why freshness cannot live in this table (see `summoner_resource_reads`
+  below).
+- **`summoner_masteries`** — one row per champion a player has mastery on, same reasoning as ranks:
+  a player who never played has no rows, and that absence still has to be datable.
+- **`summoner_resource_reads`** — when one Riot-backed resource of one account was last read, keyed
+  by an opaque `resource` name (`'ranks'`, `'masteries'`, `'matches'`). Ranks and masteries can
+  legitimately have zero rows, and that absence must still be datable or Riot would be asked again
+  on every view — so the read date cannot live next to the resource's own rows, and must not become
+  one column per resource on `summoners` either, which would grow a new column for every resource
+  and couple repositories that have no business knowing about each other. One table, keyed by
+  resource, holds every one of them instead.
+- **`matches`** — one row per finished match, exactly as Riot reported it, written once and never
+  updated. A match result never changes once the game is over, so there is no `updatedAt` here and
+  no freshness check ever runs against this table.
+- **`match_participants`** — ten rows per match on Summoner's Rift, more on a roster of a different
+  size (Arena's eight teams of two). Deliberately **not** foreign-keyed to `summoners`, unlike
+  every other puuid-bearing table here: the other nine players in a match are not accounts Lynf
+  tracks, and requiring their presence in `summoners` would force creating a never-refreshed,
+  never-looked-up profile for every opponent ever seen in a match.
+
 ### Database access
 
 **Drizzle** over an ORM with a heavier runtime: the SQL that runs is visible in the source, typing
@@ -105,6 +139,70 @@ resource, for three repositories, to preserve a rule whose purpose (independent 
 exception does not actually threaten — `SummonerResourceReadRepository` is still tested against a
 real database like every other repository, and still depends on nothing but the database client
 itself.
+
+### Freshness and fallback
+
+Profiles, ranks, masteries and the match id list each follow the exact same shape, factored once
+into `withFreshnessFallback` (`summoner/utils/riot-freshness.utils.ts`) rather than reimplemented
+by four services: serve what is stored if it is fresh enough; otherwise ask Riot, persist the
+answer, and serve that; if Riot cannot answer, serve what is stored anyway, whatever its age.
+
+Freshness is a duration per resource, configured, never hard-coded —
+`SUMMONER_PROFILE_TTL_SECONDS`, `SUMMONER_RANKS_TTL_SECONDS`, `SUMMONER_MASTERIES_TTL_SECONDS`,
+`SUMMONER_MATCHES_TTL_SECONDS` — each declared in the Zod schema of `config/environment.ts`,
+mirrored in `.env.example`, and required at startup like every other environment variable.
+
+Falling back on a stale answer is not unconditional. It only happens when all three hold: something
+was actually stored before (there is no honest answer to fall back on otherwise — inventing "unranked"
+for a Master player, or a profile that was never fetched, would be a lie, not a stale answer);
+the failure came from Riot, not from something else (a database error must never be hidden behind a
+stale answer); and it was not a 404 (a 404 means the account is gone, not that the data is merely
+old — serving a stale answer would show a player who no longer exists).
+
+### Deduplicated player resolution
+
+`SummonerService` is the one place in the whole application that resolves a Riot ID into a puuid;
+`resolvePlayer` is what ranks, masteries and matches each call for it, rather than every route
+carrying its own byte-identical copy of the lookup.
+
+A profile page fires its four routes at once, and for a player never looked up before, all four
+would otherwise resolve the same Riot ID independently — four account-v1 calls and four
+summoner-v4 calls against a key limited to a hundred calls per two minutes, for one page view. A
+map of resolutions currently in flight, keyed by Riot ID, collapses that into one of each: a second
+caller for the same key is handed the promise already running instead of starting another round
+trip. The key is serialised with `JSON.stringify` rather than joined with a plain separator,
+because `gameName` and `tagLine` arrive straight from a URL segment where `:` is legal — joining
+with `:` let a `gameName` of `abc:d` with a `tagLine` of `efg` collide with a `gameName` of `abc`
+and a `tagLine` of `d:efg`, two distinct, valid Riot IDs.
+
+An entry is removed the moment its promise settles, on success or failure alike. It must not
+outlive a failure: a mistyped Riot ID that stayed memoised would turn one 404 into a poisoned
+entry answering every later attempt with the same 404 until the process restarts. It does not need
+to outlive a success either — the resolution has already written the profile to storage, so the
+very next lookup is answered by storage, not by this map. The map therefore never holds more than
+the resolutions genuinely in flight right now, which is also what makes it safe to key on raw user
+input: nothing in it outlives the request that put it there.
+
+### A finished match is immutable; the list of them is not
+
+`matches` and `match_participants` have no `updatedAt` and no TTL: once a match is stored it is
+never asked of Riot again, because a finished match cannot change. That is what makes match history
+tenable at all against a rate-limited key — the alternative is repaying the full cost of every
+match on every visit.
+
+What _does_ go stale is a different question: "has this player played since I last checked?" — the
+_list_ of a player's recent match ids, not any match already stored. That list is governed by
+`SUMMONER_MATCHES_TTL_SECONDS` through the same `withFreshnessFallback` shape ranks and masteries
+use, dated in `summoner_resource_reads` under the resource `'matches'`. A stale list still costs
+almost nothing to re-check: every id it returns is filtered against storage before Riot is asked
+for a single match body, so re-reading a list where nothing changed costs one call and zero match
+fetches.
+
+This refines the original intention, recorded when match history was designed, that matches simply
+"have no TTL" and therefore need no freshness handling at all. That was true of the match rows
+themselves, but left an open question the code had to answer once it was built: how does the
+application ever learn that a player has queued up again? `SUMMONER_MATCHES_TTL_SECONDS` is that
+answer — it governs when the _list_ is re-read, never whether an already-stored match is re-read.
 
 ### Validation
 
@@ -227,10 +325,9 @@ Fetched data is stored, and the service decides whether what it has is fresh eno
 out again. When Riot cannot refresh a profile — rejected key, rate limit, outage — the stored one is
 served, whatever its age.
 
-A stored profile is found again under the Riot ID **as it was searched**, not only as Riot writes it:
-Riot's lookup is forgiving — searching `Caps#EUW` returns the account it writes `Cäps#EUW` — so
-both forms are recorded. Matching the search against Riot's spelling alone would miss that profile
-every time, fallback included.
+A stored profile is found again under the Riot ID **as it was searched**, not only as Riot writes it
+— see `summoner_riot_ids` under [Data model](#data-model) — because matching the search against
+Riot's spelling alone would miss that profile every time, fallback included.
 
 **The key never enters a commit.** It lives only in the environment file. GitHub's secret scanning
 does not recognise Riot key patterns, which is why the key guard exists.
