@@ -2,6 +2,7 @@ import type { SummonerProfile, SummonerRank } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 
 import { DATA_DRAGON_BASE_URL } from '../../constants/data-dragon';
+import { REGION_LABELS } from '../../constants/regions';
 import { useDataDragonVersion } from '../../hooks/use-data-dragon-version';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
 import RankPill from './rank-pill';
@@ -87,6 +88,8 @@ export default function SummonerHero({
                         ))}
 
                         <span className="text-[13px] text-ink-muted">
+                            {REGION_LABELS[profile.region]}
+                            <span aria-hidden="true"> · </span>
                             {t('profile.updatedAt', {
                                 when: new Date(profile.updatedAt),
                                 formatParams: { when: { dateStyle: 'medium', timeStyle: 'short' } },
