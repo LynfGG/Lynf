@@ -1,7 +1,6 @@
 import type { MatchParticipantSummary, MatchSummary } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 
-import { DATA_DRAGON_BASE_URL } from '../../constants/data-dragon';
 import { MATCH_QUEUE_NAMES } from '../../constants/match-queues';
 import type { ChampionCatalogue } from '../../api/champion-catalogue';
 import {
@@ -9,11 +8,12 @@ import {
     formatRelativeTime,
     formatSignedNumber,
 } from '../../utils/match-format';
+import ChampionPortrait from '../ui/champion-portrait';
+import ItemRow from '../ui/item-row';
 import MatchDetails from './match-details';
 
 const PLAYER_PORTRAIT_SIZE = 48;
 const OPPONENT_PORTRAIT_SIZE = 36;
-const ITEM_SIZE = 22;
 
 type MatchCardProps = {
     match: MatchSummary;
@@ -23,70 +23,6 @@ type MatchCardProps = {
     isExpanded: boolean;
     onToggleExpand: () => void;
 };
-
-export function ChampionPortrait({
-    championId,
-    size,
-    version,
-    catalogue,
-}: Readonly<{
-    championId: number;
-    size: number;
-    version: string | undefined;
-    catalogue: ChampionCatalogue | undefined;
-}>) {
-    const champion = catalogue?.get(championId);
-
-    if (!champion || !version) {
-        return (
-            <div
-                aria-hidden="true"
-                className="shrink-0 rounded-md bg-surface-raised"
-                style={{ width: size, height: size }}
-            />
-        );
-    }
-
-    return (
-        <img
-            src={`${DATA_DRAGON_BASE_URL}/cdn/${version}/img/champion/${champion.id}.png`}
-            alt=""
-            width={size}
-            height={size}
-            className="shrink-0 rounded-md object-cover"
-        />
-    );
-}
-
-export function ItemRow({
-    items,
-    version,
-}: Readonly<{ items: number[]; version: string | undefined }>) {
-    return (
-        <ul className="flex gap-1" aria-hidden="true">
-            {items.map((itemId, slot) => (
-                // A slot's position is its identity here — Riot's own item order,
-                // empty slots included — so the index is a stable, correct key.
-                <li key={slot}>
-                    {itemId !== 0 && version ? (
-                        <img
-                            src={`${DATA_DRAGON_BASE_URL}/cdn/${version}/img/item/${itemId}.png`}
-                            alt=""
-                            width={ITEM_SIZE}
-                            height={ITEM_SIZE}
-                            className="rounded object-cover"
-                        />
-                    ) : (
-                        <div
-                            className="rounded bg-surface-raised"
-                            style={{ width: ITEM_SIZE, height: ITEM_SIZE }}
-                        />
-                    )}
-                </li>
-            ))}
-        </ul>
-    );
-}
 
 function DiffBadge({ value, label }: Readonly<{ value: number; label: string }>) {
     const tone = value > 0 ? 'text-win' : value < 0 ? 'text-loss' : 'text-ink-muted';

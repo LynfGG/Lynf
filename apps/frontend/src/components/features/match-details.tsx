@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ChampionCatalogue } from '../../api/champion-catalogue';
 import { TEAM_POSITION_ORDER } from '../../constants/match-positions';
 import { formatNumber, formatSignedNumber } from '../../utils/match-format';
-import { ChampionPortrait } from './match-card';
+import ChampionPortrait from '../ui/champion-portrait';
 
 const TEAM_PORTRAIT_SIZE = 28;
 

@@ -1,10 +1,10 @@
 import type { ChampionMastery } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 
-import { DATA_DRAGON_BASE_URL } from '../../constants/data-dragon';
 import { useChampionCatalogue } from '../../hooks/use-champion-catalogue';
 import { useDataDragonVersion } from '../../hooks/use-data-dragon-version';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
+import ChampionPortrait from '../ui/champion-portrait';
 
 type ChampionMasteryBandProps = {
     masteries: ChampionMastery[] | undefined;
@@ -54,27 +54,18 @@ export default function ChampionMasteryBand({
         <ul className="flex flex-wrap gap-3">
             {masteries.map((mastery) => {
                 const champion = catalogue?.get(mastery.championId);
-                const portrait = champion && version && (
-                    <img
-                        src={`${DATA_DRAGON_BASE_URL}/cdn/${version}/img/champion/${champion.id}.png`}
-                        alt=""
-                        width={PORTRAIT_SIZE}
-                        height={PORTRAIT_SIZE}
-                        className="size-10 shrink-0 rounded-md object-cover"
-                    />
-                );
 
                 return (
                     <li
                         key={mastery.championId}
                         className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2"
                     >
-                        {portrait ?? (
-                            <div
-                                aria-hidden="true"
-                                className="size-10 shrink-0 rounded-md bg-surface-raised"
-                            />
-                        )}
+                        <ChampionPortrait
+                            championId={mastery.championId}
+                            size={PORTRAIT_SIZE}
+                            version={version}
+                            catalogue={catalogue}
+                        />
 
                         <div className="flex flex-col">
                             <span className="text-sm font-semibold text-ink">
