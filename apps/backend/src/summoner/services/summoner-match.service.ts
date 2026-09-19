@@ -11,11 +11,15 @@ import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
 import type {
     MatchParticipantRow,
+    MatchParticipantRunesJson,
     NewMatchParticipantRow,
     NewMatchRow,
 } from '../../database/schema/index';
 import { RiotExternal } from '../../riot/externals/riot.external';
-import type { RiotMatchResponse } from '../../riot/types/riot-responses';
+import type {
+    RiotMatchParticipantPerksResponse,
+    RiotMatchResponse,
+} from '../../riot/types/riot-responses';
 import { MatchRepository, type MatchWithPlayerRow } from '../repositories/match.repository';
 import { withFreshnessFallback } from '../utils/riot-freshness.utils';
 import { SummonerService } from './summoner.service';
@@ -216,6 +220,7 @@ function toParticipantSummary(row: MatchParticipantRow): MatchParticipantSummary
         goldEarned: row.goldEarned,
         totalDamageDealtToChampions: row.totalDamageDealtToChampions,
         items: row.items,
+        runes: row.runes,
     };
 }
 
@@ -259,7 +264,28 @@ function toRows(raw: RiotMatchResponse): {
         ],
         riotIdGameName: participant.riotIdGameName,
         riotIdTagline: participant.riotIdTagline,
+        runes: toRunes(participant.perks),
     }));
 
     return { match, participants };
+}
+
+/**
+ * Riot's two rune trees and three stat-shard fragments, reduced to numeric ids only —
+ * naming and imagery belong to the screen, not this ingestion step. Styles are read by
+ * their `description`, never by array position: nothing in Riot's documentation
+ * promises `styles[0]` is always the primary tree, and a swapped order would otherwise
+ * silently store a sub-tree as the primary one.
+ */
+function toRunes(perks: RiotMatchParticipantPerksResponse): MatchParticipantRunesJson {
+    const primary = perks.styles.find((style) => style.description === 'primaryStyle');
+    const sub = perks.styles.find((style) => style.description === 'subStyle');
+
+    return {
+        primaryStyle: primary?.style ?? 0,
+        primaryPerks: primary?.selections.map((selection) => selection.perk) ?? [],
+        subStyle: sub?.style ?? 0,
+        subPerks: sub?.selections.map((selection) => selection.perk) ?? [],
+        statPerks: perks.statPerks,
+    };
 }

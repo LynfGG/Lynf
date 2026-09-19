@@ -30,6 +30,15 @@ function readSecondsAgo(seconds: number) {
 
 const ENDED_AT = new Date('2026-09-18T10:00:00.000Z');
 
+/** A real perks shape, verified live against `match-v5` on 2026-09-19. */
+const PERKS = {
+    statPerks: { offense: 5007, flex: 5008, defense: 5001 },
+    styles: [
+        { description: 'primaryStyle', style: 8200, selections: [{ perk: 8230 }, { perk: 8224 }] },
+        { description: 'subStyle', style: 8300, selections: [{ perk: 8321 }] },
+    ],
+};
+
 function matchRow(overrides: Partial<MatchRow> = {}): MatchRow {
     return {
         matchId: 'EUW1_1',
@@ -59,6 +68,7 @@ function participantRow(overrides: Partial<MatchParticipantRow> = {}): MatchPart
         items: [1001, 0, 0, 0, 0, 0, 3340],
         riotIdGameName: 'Faker',
         riotIdTagline: 'KR1',
+        runes: null,
         ...overrides,
     };
 }
@@ -95,6 +105,7 @@ function rawMatch(matchId: string): RiotMatchResponse {
                     item4: 0,
                     item5: 0,
                     item6: 3340,
+                    perks: PERKS,
                 },
                 {
                     puuid: OPPONENT_PUUID,
@@ -118,6 +129,7 @@ function rawMatch(matchId: string): RiotMatchResponse {
                     item4: 0,
                     item5: 0,
                     item6: 3340,
+                    perks: PERKS,
                 },
             ],
         },
@@ -310,6 +322,43 @@ describe('SummonerMatchService', () => {
             );
         });
 
+        it('extracts runes as numeric ids only, reading styles by description rather than array position', async () => {
+            riot.getMatchIdsByPuuid.mockResolvedValue(['EUW1_1']);
+            riot.getMatchById.mockResolvedValue(rawMatch('EUW1_1'));
+
+            await service.findByRiotId(LOOKUP);
+
+            const [, participants] = repository.insertMatch.mock.calls[0];
+            expect(participants[0].runes).toEqual({
+                primaryStyle: 8200,
+                primaryPerks: [8230, 8224],
+                subStyle: 8300,
+                subPerks: [8321],
+                statPerks: { offense: 5007, flex: 5008, defense: 5001 },
+            });
+        });
+
+        it('falls back to empty runes rather than throwing when a style is missing', async () => {
+            const raw = rawMatch('EUW1_1');
+            raw.info.participants[0] = {
+                ...raw.info.participants[0],
+                perks: { statPerks: PERKS.statPerks, styles: [] },
+            };
+            riot.getMatchIdsByPuuid.mockResolvedValue(['EUW1_1']);
+            riot.getMatchById.mockResolvedValue(raw);
+
+            await service.findByRiotId(LOOKUP);
+
+            const [, participants] = repository.insertMatch.mock.calls[0];
+            expect(participants[0].runes).toEqual({
+                primaryStyle: 0,
+                primaryPerks: [],
+                subStyle: 0,
+                subPerks: [],
+                statPerks: PERKS.statPerks,
+            });
+        });
+
         it('stops ingestion after a rate limit, without losing what was already fetched, and leaves the list undated', async () => {
             riot.getMatchIdsByPuuid.mockResolvedValue(['EUW1_1', 'EUW1_2', 'EUW1_3']);
             riot.getMatchById
@@ -366,6 +415,18 @@ describe('SummonerMatchService', () => {
 
             await expect(service.findByRiotId(LOOKUP)).resolves.toEqual([]);
             expect(repository.findParticipantsByMatchIds).not.toHaveBeenCalled();
+        });
+
+        it('serves runes as null for a match stored before the field existed, without inventing a value', async () => {
+            const player = participantRow({ runes: null });
+            repository.findRecentByPuuid.mockResolvedValue([
+                { match: matchRow(), player } satisfies MatchWithPlayerRow,
+            ]);
+            repository.findParticipantsByMatchIds.mockResolvedValue([player]);
+
+            const [summary] = await service.findByRiotId(LOOKUP);
+
+            expect(summary.player.runes).toBeNull();
         });
 
         it('pairs the player with the opponent at the same position on the other team', async () => {

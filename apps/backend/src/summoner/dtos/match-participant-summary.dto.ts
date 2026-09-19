@@ -1,6 +1,8 @@
 import type { MatchParticipantSummary } from '@lynf/shared';
 import { ApiProperty } from '@nestjs/swagger';
 
+import { MatchParticipantRunesDto } from './match-participant-runes.dto';
+
 /**
  * One side of a match — the tracked player, or their lane opponent — as carried by
  * `SummonerMatchDto`.
@@ -62,4 +64,12 @@ export class MatchParticipantSummaryDto implements MatchParticipantSummary {
         type: [Number],
     })
     items!: number[];
+
+    @ApiProperty({
+        type: MatchParticipantRunesDto,
+        nullable: true,
+        description:
+            'Null for a match stored before this field existed — a match is immutable, so it is never backfilled.',
+    })
+    runes!: MatchParticipantRunesDto | null;
 }
