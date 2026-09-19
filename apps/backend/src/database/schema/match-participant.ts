@@ -11,14 +11,15 @@ import {
 import { matches } from './match';
 
 /**
- * One player's line in one finished match — ten rows per match.
+ * One player's line in one finished match — ten rows per match on Summoner's Rift, more
+ * on modes with a different roster size (Arena's eight teams of two, for instance).
  *
  * Deliberately **not** foreign-keyed to `summoners`, unlike every puuid-bearing table
- * elsewhere in this schema: the other nine players of a match are not accounts Lynf
- * tracks, and requiring their presence in `summoners` would force creating nine
- * profiles — never refreshed, never looked up on their own — for every single match
- * ingested. The only foreign key here is to the match itself, cascading so a deleted
- * match takes its participants with it.
+ * elsewhere in this schema: the other players of a match are not accounts Lynf tracks,
+ * and requiring their presence in `summoners` would force creating a profile — never
+ * refreshed, never looked up on its own — for every single match ingested. The only
+ * foreign key here is to the match itself, cascading so a deleted match takes its
+ * participants with it.
  *
  * `riotIdGameName` and `riotIdTagline` are the display name Riot reported *for this
  * match*, not a live lookup: a name change afterwards does not rewrite history.
