@@ -379,4 +379,40 @@ describe('RiotExternal', () => {
             ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
         });
     });
+
+    describe('getMatchTimeline', () => {
+        it('asks the match cluster for the timeline, encoded, with the API key', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.OK, {}));
+
+            await external.getMatchTimeline('EUW1_123/456', EPlatformRegion.EUW);
+
+            expect(requestedUrl()).toBe(
+                'https://europe.api.riotgames.com/lol/match/v5/matches/EUW1_123%2F456/timeline',
+            );
+            const [, options] = fetchMock.mock.calls[0];
+            expect(options.headers['X-Riot-Token']).toBe('test-key');
+        });
+
+        it('routes to the match cluster, not the account one', async () => {
+            await external.getMatchTimeline('OC1_1', EPlatformRegion.OCE);
+
+            expect(requestedUrl().startsWith('https://sea.api.riotgames.com/')).toBe(true);
+        });
+
+        it('turns a 404 into a NotFoundException', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.NOT_FOUND));
+
+            await expect(
+                external.getMatchTimeline('EUW1_123', EPlatformRegion.EUW),
+            ).rejects.toBeInstanceOf(NotFoundException);
+        });
+
+        it('does not swallow a rate limit', async () => {
+            fetchMock.mockResolvedValue(respondWith(HttpStatus.TOO_MANY_REQUESTS));
+
+            await expect(
+                external.getMatchTimeline('EUW1_123', EPlatformRegion.EUW),
+            ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+        });
+    });
 });

@@ -37,6 +37,26 @@ export type RiotChampionMasteryResponse = {
 };
 
 /**
+ * One participant's runes (`info.participants[].perks`), verified live on 2026-09-19:
+ * two styles (`primaryStyle`/`subStyle`, each with its own `selections`) and three
+ * stat-shard fragments. Only numeric ids are read here — naming and imagery are the
+ * screen's job.
+ */
+export type RiotMatchParticipantPerksResponse = {
+    statPerks: {
+        offense: number;
+        flex: number;
+        defense: number;
+    };
+    styles: {
+        /** `'primaryStyle'` or `'subStyle'` — read by value, never assumed to be an index. */
+        description: string;
+        style: number;
+        selections: { perk: number }[];
+    }[];
+};
+
+/**
  * One participant of `GET /lol/match/v5/matches/{matchId}` (`info.participants`).
  *
  * Only the fields Lynf's match list needs are declared — Riot's real payload carries
@@ -67,6 +87,7 @@ export type RiotMatchParticipantResponse = {
     item4: number;
     item5: number;
     item6: number;
+    perks: RiotMatchParticipantPerksResponse;
 };
 
 /**
@@ -87,5 +108,70 @@ export type RiotMatchResponse = {
         gameEndTimestamp: number;
         gameVersion: string;
         participants: RiotMatchParticipantResponse[];
+    };
+};
+
+/**
+ * One participant's snapshot inside one timeline frame
+ * (`info.frames[].participantFrames`, keyed by `participantId` as a string). Only the
+ * per-minute figures the timeline tabs chart are declared — Riot's real payload also
+ * carries live champion stats and damage breakdowns, discarded at extraction.
+ *
+ * There is no per-minute damage here, because `match-v5`'s timeline does not report
+ * one: verified live on 2026-09-19, not assumed.
+ */
+export type RiotMatchTimelineParticipantFrameResponse = {
+    totalGold: number;
+    minionsKilled: number;
+    jungleMinionsKilled: number;
+    xp: number;
+    level: number;
+};
+
+/**
+ * One event inside one timeline frame (`info.frames[].events`). Riot reports many more
+ * event types than this; only the fields the five kept types actually use are declared,
+ * all of them optional since no single event type carries all of them.
+ *
+ * `ITEM_UNDO`'s `beforeId`/`afterId` describe what is being reversed: `beforeId` is the
+ * item being un-bought (an undone purchase), `afterId` is the item being un-sold (an
+ * undone sale) — `0` means "nothing" on whichever side does not apply. Verified against
+ * a real match containing both cases.
+ */
+export type RiotMatchTimelineEventResponse = {
+    type: string;
+    timestamp: number;
+    participantId?: number;
+    itemId?: number;
+    skillSlot?: number;
+    killerId?: number;
+    victimId?: number;
+    assistingParticipantIds?: number[];
+    beforeId?: number;
+    afterId?: number;
+};
+
+export type RiotMatchTimelineFrameResponse = {
+    participantFrames: Record<string, RiotMatchTimelineParticipantFrameResponse>;
+    events: RiotMatchTimelineEventResponse[];
+};
+
+/**
+ * Shape of `GET /lol/match/v5/matches/{matchId}/timeline`, trimmed to what Lynf
+ * extracts. Verified live on 2026-09-19 against a 28-minute EUW match: 755 KB, one
+ * frame per minute.
+ *
+ * `info.participants` is the only place this response ties a frame's or event's
+ * `participantId` (a per-match index, 1 to 10) back to a `puuid` — the id every other
+ * table in this schema is keyed by. Extraction reads it once and maps every
+ * `participantId` through it.
+ */
+export type RiotMatchTimelineResponse = {
+    metadata: {
+        matchId: string;
+    };
+    info: {
+        participants: { participantId: number; puuid: string }[];
+        frames: RiotMatchTimelineFrameResponse[];
     };
 };

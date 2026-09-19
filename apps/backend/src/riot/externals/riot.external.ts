@@ -21,6 +21,7 @@ import type {
     RiotChampionMasteryResponse,
     RiotLeagueEntryResponse,
     RiotMatchResponse,
+    RiotMatchTimelineResponse,
     RiotSummonerResponse,
 } from '../types/riot-responses';
 import { accountClusterHost, matchClusterHost, platformHost } from '../utils/riot-routing.utils';
@@ -135,6 +136,28 @@ export class RiotExternal {
         const path = `/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
 
         return this.request<RiotMatchResponse>(
+            `${matchClusterHost(region)}${path}`,
+            `Match ${matchId} could not be found.`,
+        );
+    }
+
+    /**
+     * Reads the minute-by-minute timeline of one match.
+     *
+     * Called only when a caller explicitly asks for it, never while a profile or its
+     * match list is loading, and at most once per match ever: a finished match's
+     * timeline is as immutable as the match itself, so once extracted and stored it is
+     * never fetched again. This is by far the heaviest single call this application
+     * makes — 755 KB for a 28-minute game — which is exactly why it is never made
+     * eagerly.
+     */
+    async getMatchTimeline(
+        matchId: string,
+        region: EPlatformRegion,
+    ): Promise<RiotMatchTimelineResponse> {
+        const path = `/lol/match/v5/matches/${encodeURIComponent(matchId)}/timeline`;
+
+        return this.request<RiotMatchTimelineResponse>(
             `${matchClusterHost(region)}${path}`,
             `Match ${matchId} could not be found.`,
         );
