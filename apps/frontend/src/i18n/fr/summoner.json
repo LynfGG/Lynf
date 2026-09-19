@@ -18,6 +18,7 @@
         "updatedAt": "Mis à jour le {{when, datetime}}",
         "loading": "Recherche du joueur…",
         "refresh": "Actualiser",
+        "refreshing": "Actualisation…",
         "ranks": {
             "loading": "Recherche du classement…",
             "unranked": "Non classé cette saison",

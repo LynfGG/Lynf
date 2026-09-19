@@ -18,6 +18,7 @@
         "updatedAt": "Updated {{when, datetime}}",
         "loading": "Looking this player up…",
         "refresh": "Refresh",
+        "refreshing": "Refreshing…",
         "ranks": {
             "loading": "Looking up ranked standings…",
             "unranked": "Not ranked this season",

@@ -99,13 +99,30 @@ export default function SummonerHero({
                 </div>
             </div>
 
+            {/*
+                Each of the four refetches this triggers re-checks its own freshness
+                window on the server, so a click seconds after the page loaded can
+                legitimately produce no Riot call and no changed data — the four TTLs
+                exist to protect a rate-limited key and are never bypassed here. What the
+                click always does, though, is round-trip to our own API, so `isRefreshing`
+                (`isFetching` on all four queries) is honest, real activity: the spinner
+                and label swap are what tell a player the click registered, even when the
+                answer comes back unchanged.
+            */}
             <button
                 type="button"
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className="inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full bg-gold px-5 text-sm font-bold text-ground transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-ink-muted sm:w-auto"
+                aria-busy={isRefreshing}
+                className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-gold px-5 text-sm font-bold text-ground transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-ink-muted sm:w-auto"
             >
-                {t('profile.refresh')}
+                {isRefreshing && (
+                    <span
+                        aria-hidden="true"
+                        className="size-4 animate-spin rounded-full border-2 border-current/30 border-t-current"
+                    />
+                )}
+                {t(isRefreshing ? 'profile.refreshing' : 'profile.refresh')}
             </button>
         </article>
     );
