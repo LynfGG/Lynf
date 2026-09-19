@@ -235,19 +235,35 @@ describe('SummonerService', () => {
             expect(resolved.puuid).toBe('p-1');
         });
 
-        it('does not memoise a failed resolution, so a later request retries Riot instead of repeating the same failure', async () => {
+        it('dedupes two concurrent requests that fail together, then retries Riot fresh instead of memoising that failure', async () => {
+            // A sequential version of this test (call, await the rejection, call again)
+            // would pass identically with the whole in-flight map deleted outright: with
+            // no dedup at all, every call reaches Riot fresh regardless. Only two calls
+            // that overlap while the first is still pending can tell "no lock" apart
+            // from "a lock that cleans up correctly after a rejection" — if the map
+            // entry were not removed in `finally`, the second, later call below would
+            // reuse the first pair's already-rejected promise instead of asking Riot
+            // again.
             repository.findByRiotId.mockResolvedValue(undefined);
-            riot.getAccountByRiotId.mockRejectedValueOnce(new NotFoundException());
+            const account = deferred<never>();
+            riot.getAccountByRiotId.mockReturnValueOnce(account.promise);
 
-            await expect(service.findByRiotId(LOOKUP)).rejects.toBeInstanceOf(NotFoundException);
+            const first = service.findByRiotId(LOOKUP);
+            const second = service.findByRiotId(LOOKUP);
+            account.reject(new NotFoundException());
+
+            await expect(first).rejects.toBeInstanceOf(NotFoundException);
+            await expect(second).rejects.toBeInstanceOf(NotFoundException);
+            expect(riot.getAccountByRiotId).toHaveBeenCalledTimes(1);
 
             riot.getAccountByRiotId.mockResolvedValueOnce({
                 puuid: 'p-1',
                 gameName: 'Faker',
                 tagLine: 'KR1',
             });
-            await service.findByRiotId(LOOKUP);
+            const third = await service.findByRiotId(LOOKUP);
 
+            expect(third.puuid).toBe('p-1');
             expect(riot.getAccountByRiotId).toHaveBeenCalledTimes(2);
         });
 
