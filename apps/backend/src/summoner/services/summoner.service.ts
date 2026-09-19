@@ -155,7 +155,15 @@ export class SummonerService {
  * Riot IDs ignore case, so the dedup key must too — otherwise `Faker#KR1` and
  * `faker#kr1` in flight at the same time would be treated as two different players
  * instead of the one resolution they actually are.
+ *
+ * The three parts are JSON-encoded into an array rather than joined with a plain
+ * separator: `gameName` and `tagLine` arrive straight from a URL segment, where `:`
+ * is a legal character, so `${region}:${gameName}:${tagLine}` can collide — a
+ * `gameName` of `abc:d` with a `tagLine` of `efg` produces the same string as a
+ * `gameName` of `abc` with a `tagLine` of `d:efg`, two distinct, valid Riot IDs.
+ * `JSON.stringify` escapes quotes and backslashes inside each part, so no value any
+ * of the three fields can take produces the same key as a different triple.
  */
 function resolutionKey({ region, gameName, tagLine }: RiotIdLookup): string {
-    return `${region}:${gameName.toLowerCase()}:${tagLine.toLowerCase()}`;
+    return JSON.stringify([region, gameName.toLowerCase(), tagLine.toLowerCase()]);
 }

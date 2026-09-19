@@ -287,6 +287,32 @@ describe('SummonerService', () => {
             expect(b.puuid).toBe('p-2');
         });
 
+        it('never confuses two distinct Riot IDs whose parts contain the key separator', async () => {
+            // Naive `${region}:${gameName}:${tagLine}` concatenation collides here: both
+            // lookups produce the string `euw1:abc:d:efg`, even though they are two
+            // different, valid Riot IDs. The key must disambiguate them.
+            repository.findByRiotId.mockResolvedValue(undefined);
+            const colliding = { region: EPlatformRegion.EUW, gameName: 'abc:d', tagLine: 'efg' };
+            const other = { region: EPlatformRegion.EUW, gameName: 'abc', tagLine: 'd:efg' };
+
+            riot.getAccountByRiotId.mockImplementation(({ gameName, tagLine }) =>
+                Promise.resolve({
+                    puuid: gameName === 'abc:d' ? 'p-colliding' : 'p-other',
+                    gameName,
+                    tagLine,
+                }),
+            );
+
+            const [first, second] = await Promise.all([
+                service.findByRiotId(colliding),
+                service.findByRiotId(other),
+            ]);
+
+            expect(riot.getAccountByRiotId).toHaveBeenCalledTimes(2);
+            expect(first.puuid).toBe('p-colliding');
+            expect(second.puuid).toBe('p-other');
+        });
+
         it('is case-insensitive: the same Riot ID typed differently still dedupes to one call', async () => {
             repository.findByRiotId.mockResolvedValue(undefined);
             const account = deferred<{ puuid: string; gameName: string; tagLine: string }>();
