@@ -8,6 +8,7 @@ import { SummonerMasteryRepository } from './repositories/summoner-mastery.repos
 import { SummonerRankRepository } from './repositories/summoner-rank.repository';
 import { SummonerRepository } from './repositories/summoner.repository';
 import { SummonerResourceReadRepository } from './repositories/summoner-resource-read.repository';
+import { MatchTimelineService } from './services/match-timeline.service';
 import { SummonerMasteryService } from './services/summoner-mastery.service';
 import { SummonerMatchService } from './services/summoner-match.service';
 import { SummonerRankService } from './services/summoner-rank.service';
@@ -26,6 +27,7 @@ import { SummonerService } from './services/summoner.service';
         SummonerMatchService,
         MatchRepository,
         SummonerResourceReadRepository,
+        MatchTimelineService,
         MatchTimelineRepository,
     ],
 })
