@@ -86,6 +86,22 @@ export class MatchRepository {
         });
     }
 
+    /**
+     * The stored match itself, or `undefined` when it was never ingested. Used before a
+     * timeline is fetched: `match_timelines.matchId` is foreign-keyed to this table, so
+     * a match Lynf never stored can never gain a timeline row, and asking Riot for one
+     * would only spend quota on a match this application does not track.
+     */
+    async findById(matchId: string): Promise<MatchRow | undefined> {
+        const [row] = await this.database
+            .select()
+            .from(matches)
+            .where(eq(matches.matchId, matchId))
+            .limit(1);
+
+        return row;
+    }
+
     /** The most recent matches of this account, newest first, each with its own line. */
     async findRecentByPuuid(puuid: string, limit: number): Promise<MatchWithPlayerRow[]> {
         return this.database

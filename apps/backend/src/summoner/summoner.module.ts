@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { RiotModule } from '../riot/riot.module';
 import { SummonerController } from './controllers/summoner.controller';
+import { MatchTimelineRepository } from './repositories/match-timeline.repository';
 import { MatchRepository } from './repositories/match.repository';
 import { SummonerMasteryRepository } from './repositories/summoner-mastery.repository';
 import { SummonerRankRepository } from './repositories/summoner-rank.repository';
@@ -25,6 +26,7 @@ import { SummonerService } from './services/summoner.service';
         SummonerMatchService,
         MatchRepository,
         SummonerResourceReadRepository,
+        MatchTimelineRepository,
     ],
 })
 export class SummonerModule {}

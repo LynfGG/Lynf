@@ -114,6 +114,22 @@ describeWithDatabase('MatchRepository', () => {
         });
     });
 
+    describe('findById', () => {
+        it('returns undefined for a match never ingested', async () => {
+            await expect(repository.findById(matchId('never-ingested'))).resolves.toBeUndefined();
+        });
+
+        it('returns the stored match', async () => {
+            const id = matchId('by-id');
+            await repository.insertMatch(newMatch(id), [participant(id, PUUID)]);
+
+            await expect(repository.findById(id)).resolves.toMatchObject({
+                matchId: id,
+                platformId: 'EUW1',
+            });
+        });
+    });
+
     describe('findExistingMatchIds', () => {
         it('returns an empty set for an empty input, without querying', async () => {
             await expect(repository.findExistingMatchIds([])).resolves.toEqual(new Set());
