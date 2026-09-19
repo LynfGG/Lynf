@@ -61,7 +61,9 @@
                 "normalBlind": "Normal (Blind)",
                 "clash": "Clash",
                 "urf": "URF",
-                "unknown": "Queue {{id, number}}"
+                "arena": "Arena",
+                "coopVsAi": "Co-op vs. AI",
+                "unknown": "Other queue"
             },
             "detail": {
                 "duel": {

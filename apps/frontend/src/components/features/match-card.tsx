@@ -117,7 +117,7 @@ export default function MatchCard({
     const queueKey = MATCH_QUEUE_NAMES[match.queueId];
     const queueLabel = queueKey
         ? t(`profile.matches.queue.${queueKey}`)
-        : t('profile.matches.queue.unknown', { id: match.queueId });
+        : t('profile.matches.queue.unknown');
 
     const resultTone = match.player.win ? 'border-win' : 'border-loss';
     const resultLabel = t(

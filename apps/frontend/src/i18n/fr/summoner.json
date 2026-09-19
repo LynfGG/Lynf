@@ -61,7 +61,9 @@
                 "normalBlind": "Normale (aveugle)",
                 "clash": "Clash",
                 "urf": "URF",
-                "unknown": "File {{id, number}}"
+                "arena": "Arena",
+                "coopVsAi": "Coopération contre l'IA",
+                "unknown": "Autre file"
             },
             "detail": {
                 "duel": {
