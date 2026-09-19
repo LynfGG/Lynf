@@ -187,6 +187,7 @@ function groupByTeam(
 function TeamRow({
     participant,
     isViewedPlayer,
+    won,
     maxDamage,
     version,
     catalogue,
@@ -194,6 +195,7 @@ function TeamRow({
 }: Readonly<{
     participant: MatchParticipantSummary;
     isViewedPlayer: boolean;
+    won: boolean;
     maxDamage: number;
     version: string | undefined;
     catalogue: ChampionCatalogue | undefined;
@@ -243,7 +245,7 @@ function TeamRow({
                 </span>
                 <div className="h-1.5 w-full rounded-full bg-surface-raised" aria-hidden="true">
                     <div
-                        className="h-1.5 rounded-full bg-gold"
+                        className={`h-1.5 rounded-full ${won ? 'bg-win' : 'bg-loss'}`}
                         style={{ width: `${damageShare}%` }}
                     />
                 </div>
@@ -283,6 +285,7 @@ function TeamColumn({
                         key={participant.puuid}
                         participant={participant}
                         isViewedPlayer={participant.puuid === viewedPuuid}
+                        won={won}
                         maxDamage={maxDamage}
                         version={version}
                         catalogue={catalogue}
@@ -296,10 +299,11 @@ function TeamColumn({
 
 /**
  * The two-team breakdown: every participant Riot reported, grouped by team, each with
- * champion, pseudo, score and a damage bar proportional to the best of the match. A
- * roster short of ten — an old match, an unusual queue — simply shows what it has;
- * a mode with more than two teams, Arena among them, shows one column per team instead
- * of assuming exactly two.
+ * champion, pseudo, score and a damage bar proportional to the best of the match, drawn
+ * in that team's own colour — `win` for whichever side won, `loss` for the other — so
+ * the table reads at a glance without reading either header. A roster short of ten — an
+ * old match, an unusual queue — simply shows what it has; a mode with more than two
+ * teams, Arena among them, shows one column per team instead of assuming exactly two.
  */
 function TeamsSection({
     participants,
