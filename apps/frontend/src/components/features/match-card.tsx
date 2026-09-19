@@ -233,13 +233,24 @@ export default function MatchCard({
                 </span>
             </button>
 
+            {/*
+                The panel keeps its id and `hidden` attribute regardless of expansion, so
+                `aria-controls` above always points at a real element and the disclosure
+                keeps announcing and behaving the same way to assistive tech and the
+                keyboard. Only its content is mounted on demand: an `<img>` still loads
+                even while hidden, and mounting twenty detail panels — each with its own
+                portraits and item icons — on every profile view was firing roughly two
+                hundred image requests for panels nobody had opened.
+            */}
             <div id={detailsId} hidden={!isExpanded} className="basis-full">
-                <MatchDetails
-                    match={match}
-                    version={version}
-                    catalogue={catalogue}
-                    viewedPuuid={viewedPuuid}
-                />
+                {isExpanded && (
+                    <MatchDetails
+                        match={match}
+                        version={version}
+                        catalogue={catalogue}
+                        viewedPuuid={viewedPuuid}
+                    />
+                )}
             </div>
         </li>
     );
