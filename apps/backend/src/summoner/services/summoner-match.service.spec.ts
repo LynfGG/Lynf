@@ -8,11 +8,10 @@ import {
 } from '@nestjs/common';
 
 import type { Environment } from '../../config/environment';
-import type { MatchParticipantRow, MatchRow, SummonerRow } from '../../database/schema';
+import type { MatchParticipantRow, MatchRow } from '../../database/schema';
 import type { RiotExternal } from '../../riot/externals/riot.external';
 import type { RiotMatchResponse } from '../../riot/types/riot-responses';
 import type { MatchRepository, MatchWithPlayerRow } from '../repositories/match.repository';
-import type { SummonerRepository } from '../repositories/summoner.repository';
 import { SummonerMatchService } from './summoner-match.service';
 import type { SummonerService } from './summoner.service';
 
@@ -22,30 +21,12 @@ const LOOKUP = { region: EPlatformRegion.EUW, gameName: 'faker', tagLine: 'kr1' 
 const PUUID = 'p-1';
 const OPPONENT_PUUID = 'p-2';
 
-const PROFILE = {
-    puuid: PUUID,
-    gameName: 'Faker',
-    tagLine: 'KR1',
-    region: EPlatformRegion.EUW,
-    profileIconId: 10,
-    summonerLevel: 500,
-    updatedAt: new Date().toISOString(),
-};
+/** What `SummonerService.resolvePlayer` yields — the single, shared resolution. */
+const RESOLVED = { puuid: PUUID, gameName: 'Faker', tagLine: 'KR1' };
 
 function readSecondsAgo(seconds: number) {
     return new Date(Date.now() - seconds * 1000);
 }
-
-/** A player already seen before: a `summoners` row exists, whatever its age. */
-const STORED_SUMMONER: SummonerRow = {
-    puuid: PUUID,
-    region: EPlatformRegion.EUW,
-    gameName: 'Faker',
-    tagLine: 'KR1',
-    profileIconId: 10,
-    summonerLevel: 500,
-    updatedAt: readSecondsAgo(60 * 60 * 24 * 30),
-};
 
 const ENDED_AT = new Date('2026-09-18T10:00:00.000Z');
 
@@ -144,8 +125,7 @@ function rawMatch(matchId: string): RiotMatchResponse {
 }
 
 describe('SummonerMatchService', () => {
-    let summoners: jest.Mocked<Pick<SummonerService, 'findByRiotId'>>;
-    let summonerRepository: jest.Mocked<Pick<SummonerRepository, 'findByRiotId'>>;
+    let summoners: jest.Mocked<Pick<SummonerService, 'resolvePlayer'>>;
     let repository: jest.Mocked<
         Pick<
             MatchRepository,
@@ -162,8 +142,7 @@ describe('SummonerMatchService', () => {
     let warnLog: jest.SpyInstance;
 
     beforeEach(() => {
-        summoners = { findByRiotId: jest.fn() };
-        summonerRepository = { findByRiotId: jest.fn() };
+        summoners = { resolvePlayer: jest.fn() };
         repository = {
             findReadAt: jest.fn(),
             markListRead: jest.fn(),
@@ -175,16 +154,15 @@ describe('SummonerMatchService', () => {
         riot = { getMatchIdsByPuuid: jest.fn(), getMatchById: jest.fn() };
         service = new SummonerMatchService(
             summoners as unknown as SummonerService,
-            summonerRepository as unknown as SummonerRepository,
             repository as unknown as MatchRepository,
             riot as unknown as RiotExternal,
             ENVIRONMENT,
         );
 
-        // The default fixture is a player already stored: most tests exercise
-        // ingestion, not profile resolution.
-        summonerRepository.findByRiotId.mockResolvedValue(STORED_SUMMONER);
-        summoners.findByRiotId.mockResolvedValue(PROFILE);
+        // Player resolution itself — storage-first, deduped, falling back to Riot — is
+        // SummonerService's job and is tested there; this service only needs to trust
+        // whatever identity it is handed.
+        summoners.resolvePlayer.mockResolvedValue(RESOLVED);
         repository.findReadAt.mockResolvedValue(null);
         repository.findExistingMatchIds.mockResolvedValue(new Set());
         repository.insertMatch.mockResolvedValue(undefined);
@@ -200,19 +178,17 @@ describe('SummonerMatchService', () => {
     afterEach(() => jest.restoreAllMocks());
 
     describe('player resolution', () => {
-        it('skips the full profile resolution when the player is already stored', async () => {
+        it('resolves the player through the single shared resolution before reading matches', async () => {
             await service.findByRiotId(LOOKUP);
 
-            expect(summoners.findByRiotId).not.toHaveBeenCalled();
+            expect(summoners.resolvePlayer).toHaveBeenCalledWith(LOOKUP);
             expect(repository.findReadAt).toHaveBeenCalledWith(PUUID, EPlatformRegion.EUW);
         });
 
-        it('resolves the full profile when the player was never stored', async () => {
-            summonerRepository.findByRiotId.mockResolvedValue(undefined);
+        it('lets a missing player through as a 404', async () => {
+            summoners.resolvePlayer.mockRejectedValue(new NotFoundException());
 
-            await service.findByRiotId(LOOKUP);
-
-            expect(summoners.findByRiotId).toHaveBeenCalledWith(LOOKUP);
+            await expect(service.findByRiotId(LOOKUP)).rejects.toBeInstanceOf(NotFoundException);
         });
     });
 

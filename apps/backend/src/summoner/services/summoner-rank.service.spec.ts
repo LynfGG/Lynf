@@ -2,10 +2,9 @@ import { EPlatformRegion, ERankedQueue } from '@lynf/shared';
 import { BadGatewayException, Logger, NotFoundException } from '@nestjs/common';
 
 import type { Environment } from '../../config/environment';
-import type { SummonerRankRow, SummonerRow } from '../../database/schema';
+import type { SummonerRankRow } from '../../database/schema';
 import type { RiotExternal } from '../../riot/externals/riot.external';
 import type { SummonerRankRepository } from '../repositories/summoner-rank.repository';
-import type { SummonerRepository } from '../repositories/summoner.repository';
 import type { SummonerService } from './summoner.service';
 import { SummonerRankService } from './summoner-rank.service';
 
@@ -13,15 +12,8 @@ const TTL_SECONDS = 900;
 const ENVIRONMENT = { SUMMONER_RANKS_TTL_SECONDS: TTL_SECONDS } as Environment;
 const LOOKUP = { region: EPlatformRegion.EUW, gameName: 'faker', tagLine: 'kr1' };
 
-const PROFILE = {
-    puuid: 'p-1',
-    gameName: 'Faker',
-    tagLine: 'KR1',
-    region: EPlatformRegion.EUW,
-    profileIconId: 10,
-    summonerLevel: 500,
-    updatedAt: new Date().toISOString(),
-};
+/** What `SummonerService.resolvePlayer` yields — the single, shared resolution. */
+const RESOLVED = { puuid: 'p-1', gameName: 'Faker', tagLine: 'KR1' };
 
 /** `null` means the standings were never read — which is not the same as "not ranked". */
 function readSecondsAgo(seconds: number) {
@@ -39,20 +31,8 @@ const STORED: SummonerRankRow = {
     losses: 54,
 };
 
-/** A player already seen before: a `summoners` row exists, whatever its age. */
-const STORED_SUMMONER: SummonerRow = {
-    puuid: 'p-1',
-    region: EPlatformRegion.EUW,
-    gameName: 'Faker',
-    tagLine: 'KR1',
-    profileIconId: 10,
-    summonerLevel: 500,
-    updatedAt: readSecondsAgo(60 * 60 * 24 * 30),
-};
-
 describe('SummonerRankService', () => {
-    let summoners: jest.Mocked<Pick<SummonerService, 'findByRiotId'>>;
-    let summonerRepository: jest.Mocked<Pick<SummonerRepository, 'findByRiotId'>>;
+    let summoners: jest.Mocked<Pick<SummonerService, 'resolvePlayer'>>;
     let repository: jest.Mocked<
         Pick<SummonerRankRepository, 'findByPuuid' | 'replaceAll' | 'findReadAt'>
     >;
@@ -61,22 +41,20 @@ describe('SummonerRankService', () => {
     let warnLog: jest.SpyInstance;
 
     beforeEach(() => {
-        summoners = { findByRiotId: jest.fn() };
-        summonerRepository = { findByRiotId: jest.fn() };
+        summoners = { resolvePlayer: jest.fn() };
         repository = { findByPuuid: jest.fn(), replaceAll: jest.fn(), findReadAt: jest.fn() };
         riot = { getLeagueEntriesByPuuid: jest.fn() };
         service = new SummonerRankService(
             summoners as unknown as SummonerService,
-            summonerRepository as unknown as SummonerRepository,
             repository as unknown as SummonerRankRepository,
             riot as unknown as RiotExternal,
             ENVIRONMENT,
         );
 
-        // The default fixture is a player never stored before: it exercises the same
-        // full-resolution path the tests relied on before storage was checked first.
-        summonerRepository.findByRiotId.mockResolvedValue(undefined);
-        summoners.findByRiotId.mockResolvedValue(PROFILE);
+        // Player resolution itself — storage-first, deduped, falling back to Riot — is
+        // SummonerService's job and is tested there; this service only needs to trust
+        // whatever identity it is handed.
+        summoners.resolvePlayer.mockResolvedValue(RESOLVED);
         repository.findReadAt.mockResolvedValue(null);
         repository.findByPuuid.mockResolvedValue([]);
         repository.replaceAll.mockImplementation(
@@ -90,19 +68,17 @@ describe('SummonerRankService', () => {
 
     afterEach(() => jest.restoreAllMocks());
 
-    it('skips the full profile resolution when the player is already stored', async () => {
-        summonerRepository.findByRiotId.mockResolvedValue(STORED_SUMMONER);
+    it('resolves the player through the single shared resolution before reading standings', async () => {
         repository.findReadAt.mockResolvedValue(readSecondsAgo(TTL_SECONDS - 1));
         repository.findByPuuid.mockResolvedValue([STORED]);
 
         await service.findByRiotId(LOOKUP);
 
-        expect(summoners.findByRiotId).not.toHaveBeenCalled();
+        expect(summoners.resolvePlayer).toHaveBeenCalledWith(LOOKUP);
         expect(repository.findReadAt).toHaveBeenCalledWith('p-1', EPlatformRegion.EUW);
     });
 
-    it('resolves the full profile and still fetches and saves standings when the player was never stored', async () => {
-        summonerRepository.findByRiotId.mockResolvedValue(undefined);
+    it('fetches and saves standings once the resolved player has none stored', async () => {
         riot.getLeagueEntriesByPuuid.mockResolvedValue([
             {
                 queueType: ERankedQueue.SOLO,
@@ -116,7 +92,6 @@ describe('SummonerRankService', () => {
 
         await service.findByRiotId(LOOKUP);
 
-        expect(summoners.findByRiotId).toHaveBeenCalledWith(LOOKUP);
         expect(riot.getLeagueEntriesByPuuid).toHaveBeenCalledWith('p-1', EPlatformRegion.EUW);
         expect(repository.replaceAll).toHaveBeenCalledWith(
             'p-1',
@@ -278,9 +253,7 @@ describe('SummonerRankService', () => {
     });
 
     it('lets a missing player through as a 404', async () => {
-        // Never stored, so the full resolution runs, and Riot has never heard of them.
-        summonerRepository.findByRiotId.mockResolvedValue(undefined);
-        summoners.findByRiotId.mockRejectedValue(new NotFoundException());
+        summoners.resolvePlayer.mockRejectedValue(new NotFoundException());
 
         await expect(service.findByRiotId(LOOKUP)).rejects.toBeInstanceOf(NotFoundException);
     });

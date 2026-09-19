@@ -17,7 +17,6 @@ import type {
 import { RiotExternal } from '../../riot/externals/riot.external';
 import type { RiotMatchResponse } from '../../riot/types/riot-responses';
 import { MatchRepository, type MatchWithPlayerRow } from '../repositories/match.repository';
-import { SummonerRepository } from '../repositories/summoner.repository';
 import { withFreshnessFallback } from '../utils/riot-freshness.utils';
 import { SummonerService } from './summoner.service';
 
@@ -32,6 +31,9 @@ import { SummonerService } from './summoner.service';
  * ranks and masteries already use. A stale list still costs nothing extra: every id it
  * returns is filtered against storage before Riot is ever asked for a single match, so
  * a list re-read where nothing changed costs one call and zero match fetches.
+ *
+ * The puuid this needs is resolved by `SummonerService.resolvePlayer` — the same single,
+ * deduped resolution ranks and masteries call, rather than a fourth copy of it here.
  */
 @Injectable()
 export class SummonerMatchService {
@@ -39,7 +41,6 @@ export class SummonerMatchService {
 
     constructor(
         private readonly summonerService: SummonerService,
-        private readonly summonerRepository: SummonerRepository,
         private readonly matchRepository: MatchRepository,
         private readonly riotExternal: RiotExternal,
         @Inject(ENVIRONMENT) private readonly environment: Environment,
@@ -47,7 +48,7 @@ export class SummonerMatchService {
 
     async findByRiotId(lookup: RiotIdLookup): Promise<MatchSummary[]> {
         const { region } = lookup;
-        const { puuid, gameName, tagLine } = await this.resolvePlayer(lookup);
+        const { puuid, gameName, tagLine } = await this.summonerService.resolvePlayer(lookup);
 
         const readAt = await this.matchRepository.findReadAt(puuid, region);
 
@@ -70,22 +71,6 @@ export class SummonerMatchService {
     private isFresh(readAt: Date) {
         const ageInSeconds = (Date.now() - readAt.getTime()) / 1000;
         return ageInSeconds < this.environment.SUMMONER_MATCHES_TTL_SECONDS;
-    }
-
-    /**
-     * Yields the puuid this player is known under, and enough of their identity to log
-     * with. A stored row already answers both, whatever its age, and also guarantees
-     * the `summoners` row that dating the match list has a foreign key to. Only a
-     * player never seen before goes through the full profile resolution.
-     */
-    private async resolvePlayer(lookup: RiotIdLookup) {
-        const stored = await this.summonerRepository.findByRiotId(lookup);
-
-        if (stored) {
-            return { puuid: stored.puuid, gameName: stored.gameName, tagLine: stored.tagLine };
-        }
-
-        return this.summonerService.findByRiotId(lookup);
     }
 
     /**

@@ -7,7 +7,6 @@ import type { SummonerMasteryRow } from '../../database/schema/index';
 import { RiotExternal } from '../../riot/externals/riot.external';
 import type { RiotChampionMasteryResponse } from '../../riot/types/riot-responses';
 import { SummonerMasteryRepository } from '../repositories/summoner-mastery.repository';
-import { SummonerRepository } from '../repositories/summoner.repository';
 import { withFreshnessFallback } from '../utils/riot-freshness.utils';
 import { SummonerService } from './summoner.service';
 
@@ -18,7 +17,10 @@ import { SummonerService } from './summoner.service';
  * `summoners` row to satisfy the foreign key on `summoner_masteries` — not a fresh
  * profile. Whatever is already stored answers both, however old it is; the full
  * resolution through the profile service is only asked for the first time a player is
- * ever seen.
+ * ever seen, and it is `SummonerService.resolvePlayer` that runs it: the single
+ * resolution every route shares, deduped there against the identical requests ranks,
+ * masteries and matches fire in the same breath for a player none of them has seen
+ * before.
  */
 @Injectable()
 export class SummonerMasteryService {
@@ -26,7 +28,6 @@ export class SummonerMasteryService {
 
     constructor(
         private readonly summonerService: SummonerService,
-        private readonly summonerRepository: SummonerRepository,
         private readonly summonerMasteryRepository: SummonerMasteryRepository,
         private readonly riotExternal: RiotExternal,
         @Inject(ENVIRONMENT) private readonly environment: Environment,
@@ -34,7 +35,7 @@ export class SummonerMasteryService {
 
     async findByRiotId(lookup: RiotIdLookup): Promise<ChampionMastery[]> {
         const { region } = lookup;
-        const { puuid, gameName, tagLine } = await this.resolvePlayer(lookup);
+        const { puuid, gameName, tagLine } = await this.summonerService.resolvePlayer(lookup);
 
         const readAt = await this.summonerMasteryRepository.findReadAt(puuid, region);
 
@@ -71,22 +72,6 @@ export class SummonerMasteryService {
     private isFresh(readAt: Date) {
         const ageInSeconds = (Date.now() - readAt.getTime()) / 1000;
         return ageInSeconds < this.environment.SUMMONER_MASTERIES_TTL_SECONDS;
-    }
-
-    /**
-     * Yields the puuid this player is known under, and enough of their identity to log
-     * with. A stored row already answers both, whatever its age, and also guarantees the
-     * `summoners` row that `summoner_masteries` has a foreign key to. Only a player never
-     * seen before goes through the full profile resolution.
-     */
-    private async resolvePlayer(lookup: RiotIdLookup) {
-        const stored = await this.summonerRepository.findByRiotId(lookup);
-
-        if (stored) {
-            return { puuid: stored.puuid, gameName: stored.gameName, tagLine: stored.tagLine };
-        }
-
-        return this.summonerService.findByRiotId(lookup);
     }
 }
 
