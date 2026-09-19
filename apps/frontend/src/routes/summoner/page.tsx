@@ -1,4 +1,9 @@
-import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } from '@lynf/shared';
+import {
+    EPlatformRegion,
+    PLATFORM_REGIONS,
+    splitRiotIdSegment,
+    type RiotIdLookup,
+} from '@lynf/shared';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
@@ -13,11 +18,7 @@ import { useSummonerProfile } from '../../hooks/use-summoner-profile';
 import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
 import { addRecentSearch } from '../../utils/recent-searches';
 
-/**
- * A Riot ID travels in the URL as `gameName-tagLine`: that is how players copy it, and
- * `#` cannot cross a URL — it would open a fragment. Only the last dash separates the
- * two, because a game name may contain dashes and a tag line may not.
- */
+/** A Riot ID travels in the URL as `region/gameName-tagLine`: that is how players copy it. */
 function parseLookup(
     region: string | undefined,
     riotId: string | undefined,
@@ -30,35 +31,16 @@ function parseLookup(
         return undefined;
     }
 
-    // `#` is the real separator of a Riot ID and can never appear in the ID itself, so a
-    // decoded `#` indicates the URL was built from an unencoded Riot ID (or tampered
-    // with) rather than from a properly encoded game name and tag line.
-    if (riotId.includes('#')) {
-        return undefined;
-    }
+    const split = splitRiotIdSegment(riotId);
 
-    const separator = riotId.lastIndexOf('-');
-
-    if (separator <= 0 || separator === riotId.length - 1) {
-        return undefined;
-    }
-
-    const gameName = riotId.slice(0, separator);
-    const tagLine = riotId.slice(separator + 1);
-
-    if (
-        gameName.length < RIOT_ID_LENGTH.gameName.min ||
-        gameName.length > RIOT_ID_LENGTH.gameName.max ||
-        tagLine.length < RIOT_ID_LENGTH.tagLine.min ||
-        tagLine.length > RIOT_ID_LENGTH.tagLine.max
-    ) {
+    if (!split) {
         return undefined;
     }
 
     return {
         region: region as EPlatformRegion,
-        gameName,
-        tagLine,
+        gameName: split.gameName,
+        tagLine: split.tagLine,
     };
 }
 

@@ -1,4 +1,9 @@
-import type { EPlatformRegion, RiotIdLookup, SummonerProfile } from '@lynf/shared';
+import {
+    normalizeRiotId,
+    type EPlatformRegion,
+    type RiotIdLookup,
+    type SummonerProfile,
+} from '@lynf/shared';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../../config/config.module';
@@ -165,5 +170,6 @@ export class SummonerService {
  * of the three fields can take produces the same key as a different triple.
  */
 function resolutionKey({ region, gameName, tagLine }: RiotIdLookup): string {
-    return JSON.stringify([region, gameName.toLowerCase(), tagLine.toLowerCase()]);
+    const normalized = normalizeRiotId(gameName, tagLine);
+    return JSON.stringify([region, normalized.gameName, normalized.tagLine]);
 }

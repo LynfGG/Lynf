@@ -1,3 +1,4 @@
+import { buildRiotIdSegment, normalizeRiotId } from '@lynf/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -12,7 +13,7 @@ import {
 
 /** Same encoding as the search form: each part encoded on its own before joining. */
 function profilePath({ region, gameName, tagLine }: RecentSearch): string {
-    return `/${region}/${encodeURIComponent(gameName)}-${encodeURIComponent(tagLine)}`;
+    return `/${region}/${buildRiotIdSegment(gameName, tagLine)}`;
 }
 
 /**
@@ -47,10 +48,11 @@ export default function RecentSearches() {
             <ul className="flex flex-col gap-2">
                 {entries.map((entry) => {
                     const riotId = `${entry.gameName}#${entry.tagLine}`;
+                    const normalized = normalizeRiotId(entry.gameName, entry.tagLine);
 
                     return (
                         <li
-                            key={`${entry.region}:${entry.gameName.toLowerCase()}:${entry.tagLine.toLowerCase()}`}
+                            key={`${entry.region}:${normalized.gameName}:${normalized.tagLine}`}
                             className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2"
                         >
                             <Link

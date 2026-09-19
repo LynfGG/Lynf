@@ -1,4 +1,10 @@
-import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } from '@lynf/shared';
+import {
+    buildRiotIdSegment,
+    EPlatformRegion,
+    PLATFORM_REGIONS,
+    RIOT_ID_LENGTH,
+    type RiotIdLookup,
+} from '@lynf/shared';
 import type { SubmitEvent } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,12 +43,7 @@ export default function HomePage() {
     const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        // Each part is encoded on its own before joining, so a `#` (or a literal `-`
-        // introduced by encoding) pasted into either field cannot be mistaken for the
-        // separator or open a URL fragment — the same discipline as the API client.
-        const riotId = `${encodeURIComponent(search.gameName)}-${encodeURIComponent(search.tagLine)}`;
-
-        navigate(`/${search.region}/${riotId}`);
+        navigate(`/${search.region}/${buildRiotIdSegment(search.gameName, search.tagLine)}`);
     };
 
     return (

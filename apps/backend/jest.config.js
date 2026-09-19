@@ -4,6 +4,7 @@ module.exports = {
     testEnvironment: 'node',
     moduleFileExtensions: ['js', 'json', 'ts'],
     testRegex: String.raw`.*\.spec\.ts$`,
+    roots: ['<rootDir>/src', '<rootDir>/../../packages/shared/src'],
     transform: {
         '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
     },

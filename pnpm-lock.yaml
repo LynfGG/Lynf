@@ -271,6 +271,9 @@ importers:
 
   packages/shared:
     devDependencies:
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
       typescript:
         specifier: ~6.0.3
         version: 6.0.3

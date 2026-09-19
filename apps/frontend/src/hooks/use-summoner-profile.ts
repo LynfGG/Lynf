@@ -1,11 +1,12 @@
-import type { RiotIdLookup } from '@lynf/shared';
+import { normalizeRiotId, type RiotIdLookup } from '@lynf/shared';
 import { skipToken, useQuery } from '@tanstack/react-query';
 
 import { fetchSummonerProfile } from '../api/summoner';
 
 /** Riot IDs are case-insensitive, so `Faker#KR1` and `faker#kr1` share one cache entry. */
 export function summonerProfileQueryKey({ region, gameName, tagLine }: RiotIdLookup) {
-    return ['summoner', region, gameName.toLowerCase(), tagLine.toLowerCase()];
+    const normalized = normalizeRiotId(gameName, tagLine);
+    return ['summoner', region, normalized.gameName, normalized.tagLine];
 }
 
 /**

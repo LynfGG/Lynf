@@ -1,4 +1,4 @@
-import type { RiotIdLookup } from '@lynf/shared';
+import { normalizeRiotId, type RiotIdLookup } from '@lynf/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, getTableColumns } from 'drizzle-orm';
 
@@ -9,11 +9,6 @@ import {
     type NewSummonerRow,
     type SummonerRow,
 } from '../../database/schema/index';
-
-/** Riot IDs ignore case: they are stored, and compared, in lower case. */
-function normaliseRiotId(gameName: string, tagLine: string) {
-    return { gameName: gameName.toLowerCase(), tagLine: tagLine.toLowerCase() };
-}
 
 /**
  * Every summoner query lives here, and nothing else does.
@@ -31,7 +26,7 @@ export class SummonerRepository {
         gameName,
         tagLine,
     }: RiotIdLookup): Promise<SummonerRow | undefined> {
-        const riotId = normaliseRiotId(gameName, tagLine);
+        const riotId = normalizeRiotId(gameName, tagLine);
 
         const [row] = await this.database
             .select(getTableColumns(summoners))
@@ -81,8 +76,8 @@ export class SummonerRepository {
                 .returning();
 
             const riotIds = [
-                normaliseRiotId(searchedAs.gameName, searchedAs.tagLine),
-                normaliseRiotId(profile.gameName, profile.tagLine),
+                normalizeRiotId(searchedAs.gameName, searchedAs.tagLine),
+                normalizeRiotId(profile.gameName, profile.tagLine),
             ];
 
             // Usually the search and Riot's answer are the same Riot ID. It is written once:

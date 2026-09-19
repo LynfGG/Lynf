@@ -1,4 +1,9 @@
-import { PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } from '@lynf/shared';
+import {
+    isRiotIdLengthValid,
+    normalizeRiotId,
+    PLATFORM_REGIONS,
+    type RiotIdLookup,
+} from '@lynf/shared';
 
 /**
  * Recently viewed players live in the browser's local storage, never in the database.
@@ -33,11 +38,8 @@ function isRecentSearch(value: unknown): value is RecentSearch {
         typeof candidate.region === 'string' &&
         PLATFORM_REGION_SET.has(candidate.region) &&
         typeof candidate.gameName === 'string' &&
-        candidate.gameName.length >= RIOT_ID_LENGTH.gameName.min &&
-        candidate.gameName.length <= RIOT_ID_LENGTH.gameName.max &&
         typeof candidate.tagLine === 'string' &&
-        candidate.tagLine.length >= RIOT_ID_LENGTH.tagLine.min &&
-        candidate.tagLine.length <= RIOT_ID_LENGTH.tagLine.max
+        isRiotIdLengthValid(candidate.gameName, candidate.tagLine)
     );
 }
 
@@ -47,10 +49,13 @@ function isRecentSearch(value: unknown): value is RecentSearch {
  * the same entry here.
  */
 function isSameSearch(a: RecentSearch, b: RecentSearch): boolean {
+    const normalizedA = normalizeRiotId(a.gameName, a.tagLine);
+    const normalizedB = normalizeRiotId(b.gameName, b.tagLine);
+
     return (
         a.region === b.region &&
-        a.gameName.toLowerCase() === b.gameName.toLowerCase() &&
-        a.tagLine.toLowerCase() === b.tagLine.toLowerCase()
+        normalizedA.gameName === normalizedB.gameName &&
+        normalizedA.tagLine === normalizedB.tagLine
     );
 }
 
