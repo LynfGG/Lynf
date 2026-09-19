@@ -52,7 +52,7 @@ export default function RecentSearches() {
 
                     return (
                         <li
-                            key={`${entry.region}:${normalized.gameName}:${normalized.tagLine}`}
+                            key={`${entry.region}/${buildRiotIdSegment(normalized.gameName, normalized.tagLine)}`}
                             className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2"
                         >
                             <Link
