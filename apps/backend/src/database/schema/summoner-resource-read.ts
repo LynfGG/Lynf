@@ -5,17 +5,18 @@ import { summoners } from './summoner';
 /**
  * When one Riot-backed resource of one account was last read, on one platform.
  *
- * Ranks today, masteries and match history tomorrow: each is fetched from Riot on its
- * own schedule, and each can legitimately have no rows at all — a player ranked nowhere
- * has no row in `summoner_ranks`, a player with no mastery has none in a future
- * `summoner_masteries`. The absence of rows must still be datable, or Riot would be
- * asked again on every view, so the read date cannot live next to the resource's own
- * rows. It also must not live as one column per resource on `summoners`: that grows a
- * new column for every resource, written by repositories that have no business knowing
- * about each other. A dedicated table, keyed by resource, holds every one of them.
+ * Ranks, masteries and the match id list each: each is fetched from Riot on its own
+ * schedule, and each can legitimately have no rows at all — a player ranked nowhere has
+ * no row in `summoner_ranks`, a player with no mastery has none in `summoner_masteries`.
+ * The absence of rows must still be datable, or Riot would be asked again on every view,
+ * so the read date cannot live next to the resource's own rows. It also must not live as
+ * one column per resource on `summoners`: that grows a new column for every resource,
+ * written by repositories that have no business knowing about each other. A dedicated
+ * table, keyed by resource, holds every one of them.
  *
- * `resource` is a short, stable string — `'ranks'` today — not a foreign key: nothing
- * else needs to join on it, and the set of resources is closed code, not data.
+ * `resource` is a short, stable string — `'ranks'`, `'masteries'`, `'matches'` — not a
+ * foreign key: nothing else needs to join on it, and the set of resources is closed
+ * code, not data.
  */
 export const summonerResourceReads = pgTable(
     'summoner_resource_reads',

@@ -28,7 +28,12 @@ function sortByPosition(
     return [...participants].sort((a, b) => rank(a) - rank(b));
 }
 
-/** Every participant, grouped by `teamId` and kept in the order Riot first reported. */
+/**
+ * Every participant, grouped by `teamId`. The order within a group is whatever the
+ * database returned — `match.repository.ts` has no `ORDER BY` on this query — and that
+ * is fine: `TeamColumn` below always re-sorts a group with `sortByPosition` before
+ * rendering it, so nothing here ever relies on the input order.
+ */
 function groupByTeam(
     participants: readonly MatchParticipantSummary[],
 ): [number, MatchParticipantSummary[]][] {
