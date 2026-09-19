@@ -75,6 +75,37 @@ schema entry point, and fighting it to preserve the rule would cost more than th
 
 Writes go through transactions.
 
+**A second, deliberate exception:** `SummonerRankRepository`, `SummonerMasteryRepository` and
+`MatchRepository` each inject `SummonerResourceReadRepository`, which
+[`docs/conventions/nestjs.md`](./conventions/nestjs.md) otherwise forbids outright — "a repository
+depends on the database client only, never on another repository."
+
+The rule exists to keep repositories independently testable and free of hidden coupling. It is
+overridden here for two reasons, one shared by all three and one specific to ranks and masteries.
+
+Shared: "when was this resource last read from Riot" is the same bookkeeping — one table,
+`summoner_resource_reads` — for ranks, masteries and the match id list, keyed by an opaque
+`resource` name. Reimplementing that table's read/write three times, once per repository, would
+cost more than the exception.
+
+Specific to ranks and masteries: `replaceAll` must date the read in the **same transaction** as the
+rows it replaces. If those two writes ever landed in separate transactions, a failure between them
+would leave rows stored but undated — and an undated resource is asked of Riot again on every
+request, indefinitely, against a rate-limited key. `SummonerResourceReadRepository.write` accepts
+the caller's own transaction for exactly this, so `replaceAll` can date the read as part of the one
+transaction that writes the rows. The match id list has no single row of its own to co-write with —
+matches are inserted one at a time, deliberately, so a later one failing never undoes an earlier one
+— so `MatchRepository.markListRead` writes the date directly, and only once ingestion has run to
+completion; see `summoner-match.service.ts`.
+
+The alternative — moving the read/write of the date into the service layer, with the service
+opening the transaction and passing it down to two repositories — was considered and rejected: it
+would leak Drizzle's transaction type into every service that reads or writes a Riot-backed
+resource, for three repositories, to preserve a rule whose purpose (independent testability) this
+exception does not actually threaten — `SummonerResourceReadRepository` is still tested against a
+real database like every other repository, and still depends on nothing but the database client
+itself.
+
 ### Validation
 
 Two validators coexist, with a clear boundary:

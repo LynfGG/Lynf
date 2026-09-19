@@ -13,7 +13,14 @@ import { SummonerResourceReadRepository } from './summoner-resource-read.reposit
 /** The name champion masteries are read and dated under in `summoner_resource_reads`. */
 const MASTERIES_RESOURCE = 'masteries';
 
-/** Every champion-mastery query lives here, and nothing else does. */
+/**
+ * Every champion-mastery query lives here, and nothing else does.
+ *
+ * It injects `SummonerResourceReadRepository` — a declared exception to "a repository
+ * never depends on another repository" (see `docs/architecture.md#database-access`):
+ * `replaceAll` must date the read in the very same transaction it writes the masteries
+ * in, so a failure between the two can never leave rows stored but undated.
+ */
 @Injectable()
 export class SummonerMasteryRepository {
     constructor(

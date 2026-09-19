@@ -82,7 +82,8 @@ mapping is the service's job, not the controller's.
 All database querying lives here, and nothing else.
 
 - **A repository depends on the database client only** — never on a service, never on another
-  repository, never on an external.
+  repository, never on an external. The one declared exception, and its reason, live in
+  [`docs/architecture.md`](../architecture.md#database-access).
 - Inserts and updates run inside transactions.
 
 ### Externals

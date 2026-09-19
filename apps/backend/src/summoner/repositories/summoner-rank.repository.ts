@@ -13,7 +13,14 @@ import { SummonerResourceReadRepository } from './summoner-resource-read.reposit
 /** The name ranked standings are read and dated under in `summoner_resource_reads`. */
 const RANKS_RESOURCE = 'ranks';
 
-/** Every ranked-standing query lives here, and nothing else does. */
+/**
+ * Every ranked-standing query lives here, and nothing else does.
+ *
+ * It injects `SummonerResourceReadRepository` — a declared exception to "a repository
+ * never depends on another repository" (see `docs/architecture.md#database-access`):
+ * `replaceAll` must date the read in the very same transaction it writes the standings
+ * in, so a failure between the two can never leave rows stored but undated.
+ */
 @Injectable()
 export class SummonerRankRepository {
     constructor(

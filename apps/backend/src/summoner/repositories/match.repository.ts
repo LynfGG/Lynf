@@ -29,6 +29,15 @@ export type MatchWithPlayerRow = {
  * immutable, so it is written once, with `onConflictDoNothing` guarding only against
  * two overlapping refreshes racing to store the same match — never against Riot
  * answering something new for an id already stored.
+ *
+ * It injects `SummonerResourceReadRepository` — a declared exception to "a repository
+ * never depends on another repository" (see `docs/architecture.md#database-access`), for
+ * the same reason `SummonerRankRepository` and `SummonerMasteryRepository` do: the
+ * `summoner_resource_reads` bookkeeping is shared rather than reimplemented three
+ * times, and its `write` can join whichever transaction dates a resource alongside the
+ * rows it describes — ranks and masteries use that; the match id list has no single row
+ * of its own to co-write with, so `markListRead` writes it directly, once ingestion has
+ * run to completion (see `ingest` below).
  */
 @Injectable()
 export class MatchRepository {

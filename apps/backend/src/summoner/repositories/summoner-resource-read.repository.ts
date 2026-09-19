@@ -17,6 +17,11 @@ type Executor = Database | Parameters<Parameters<Database['transaction']>[0]>[0]
  *
  * It knows neither ranks nor masteries: `resource` is an opaque short string to it,
  * supplied by the repository that owns that resource.
+ *
+ * `SummonerRankRepository`, `SummonerMasteryRepository` and `MatchRepository` each
+ * inject this one — the declared exception to "a repository never depends on another
+ * repository" documented in `docs/architecture.md#database-access`. This repository
+ * itself keeps to the rule: it depends on the database client alone.
  */
 @Injectable()
 export class SummonerResourceReadRepository {
