@@ -1,4 +1,4 @@
-import type { MatchParticipantSummary, MatchSummary } from '@lynf/shared';
+import type { MatchParticipantSummary, MatchSummary, RiotIdLookup } from '@lynf/shared';
 import { useTranslation } from 'react-i18next';
 
 import { MATCH_QUEUE_NAMES } from '../../constants/match-queues';
@@ -20,6 +20,7 @@ type MatchCardProps = {
     version: string | undefined;
     catalogue: ChampionCatalogue | undefined;
     viewedPuuid: string;
+    lookup: RiotIdLookup;
     isExpanded: boolean;
     onToggleExpand: () => void;
 };
@@ -45,6 +46,7 @@ export default function MatchCard({
     version,
     catalogue,
     viewedPuuid,
+    lookup,
     isExpanded,
     onToggleExpand,
 }: Readonly<MatchCardProps>) {
@@ -185,6 +187,7 @@ export default function MatchCard({
                         version={version}
                         catalogue={catalogue}
                         viewedPuuid={viewedPuuid}
+                        lookup={lookup}
                     />
                 )}
             </div>

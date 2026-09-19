@@ -89,18 +89,63 @@
                 "unknown": "Other queue"
             },
             "detail": {
+                "tabs": {
+                    "label": "Match detail",
+                    "general": "General",
+                    "duel": "Duel",
+                    "stuff": "Stuff"
+                },
+                "timeline": {
+                    "loading": "Loading the match timeline…"
+                },
                 "duel": {
                     "heading": "Lane duel",
                     "creepScore": "Minions",
                     "gold": "Gold",
+                    "xp": "Experience",
                     "damage": "Damage to champions",
                     "gap": "Gap: {{value}}",
-                    "even": "Even"
+                    "even": "Even",
+                    "noOpponent": "No lane opponent could be identified for this match.",
+                    "timeline": {
+                        "heading": "Lane gap over time",
+                        "hint": "Above the line: ahead of the lane opponent. Below: behind.",
+                        "elimination": "Elimination",
+                        "death": "Death",
+                        "eliminationAt": "Elimination at {{time}}",
+                        "deathAt": "Death at {{time}}"
+                    }
                 },
                 "teams": {
                     "heading": "Teams",
                     "you": "You",
                     "damage": "Damage to champions"
+                },
+                "stuff": {
+                    "runes": {
+                        "heading": "Runes",
+                        "loading": "Loading runes…",
+                        "unavailable": "Rune data could not be loaded.",
+                        "missing": "This match predates rune tracking — no rune data was ever recorded for it.",
+                        "unknownPerk": "Rune {{id}}"
+                    },
+                    "skillOrder": {
+                        "heading": "Skill order",
+                        "slots": {
+                            "q": "Q",
+                            "w": "W",
+                            "e": "E",
+                            "r": "R"
+                        },
+                        "cellLabel": "{{skill}} at level {{level, number}}"
+                    },
+                    "itemOrder": {
+                        "heading": "Item order",
+                        "empty": "No purchases recorded.",
+                        "bought": "Bought",
+                        "sold": "Sold",
+                        "item": "Item {{id}}"
+                    }
                 }
             }
         }

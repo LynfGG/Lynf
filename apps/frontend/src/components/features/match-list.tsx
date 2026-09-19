@@ -1,4 +1,4 @@
-import type { MatchSummary } from '@lynf/shared';
+import type { MatchSummary, RiotIdLookup } from '@lynf/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +22,8 @@ type MatchListProps = {
     error: Error | null;
     /** The puuid of the profile this page is showing, to highlight it in a team breakdown. */
     viewedPuuid: string;
+    /** The profile this page is showing, needed to fetch a match's timeline on demand. */
+    lookup: RiotIdLookup;
 };
 
 /**
@@ -40,6 +42,7 @@ export default function MatchList({
     isPending,
     error,
     viewedPuuid,
+    lookup,
 }: Readonly<MatchListProps>) {
     const { t } = useTranslation('summoner');
     const messageFor = useSummonerErrorMessage();
@@ -101,6 +104,7 @@ export default function MatchList({
                             version={version}
                             catalogue={catalogue}
                             viewedPuuid={viewedPuuid}
+                            lookup={lookup}
                             isExpanded={expandedMatchId === match.matchId}
                             onToggleExpand={() =>
                                 setExpandedMatchId((current) =>

@@ -89,18 +89,63 @@
                 "unknown": "Autre file"
             },
             "detail": {
+                "tabs": {
+                    "label": "Détail de la partie",
+                    "general": "Général",
+                    "duel": "Duel",
+                    "stuff": "Stuff"
+                },
+                "timeline": {
+                    "loading": "Chargement de la chronologie de la partie…"
+                },
                 "duel": {
                     "heading": "Duel de couloir",
                     "creepScore": "Sbires",
                     "gold": "Or",
+                    "xp": "Expérience",
                     "damage": "Dégâts aux champions",
                     "gap": "Écart : {{value}}",
-                    "even": "Égalité"
+                    "even": "Égalité",
+                    "noOpponent": "Aucun adversaire de couloir n'a pu être identifié pour cette partie.",
+                    "timeline": {
+                        "heading": "Écart de couloir au fil du temps",
+                        "hint": "Au-dessus de la ligne : devant l'adversaire de couloir. En dessous : derrière.",
+                        "elimination": "Élimination",
+                        "death": "Mort",
+                        "eliminationAt": "Élimination à {{time}}",
+                        "deathAt": "Mort à {{time}}"
+                    }
                 },
                 "teams": {
                     "heading": "Équipes",
                     "you": "Vous",
                     "damage": "Dégâts aux champions"
+                },
+                "stuff": {
+                    "runes": {
+                        "heading": "Runes",
+                        "loading": "Chargement des runes…",
+                        "unavailable": "Les données de runes n'ont pas pu être chargées.",
+                        "missing": "Cette partie est antérieure au suivi des runes — aucune donnée de rune n'a jamais été enregistrée pour elle.",
+                        "unknownPerk": "Rune {{id}}"
+                    },
+                    "skillOrder": {
+                        "heading": "Ordre des compétences",
+                        "slots": {
+                            "q": "Q",
+                            "w": "W",
+                            "e": "E",
+                            "r": "R"
+                        },
+                        "cellLabel": "{{skill}} au niveau {{level, number}}"
+                    },
+                    "itemOrder": {
+                        "heading": "Ordre d'achat",
+                        "empty": "Aucun achat enregistré.",
+                        "bought": "Acheté",
+                        "sold": "Vendu",
+                        "item": "Objet {{id}}"
+                    }
                 }
             }
         }

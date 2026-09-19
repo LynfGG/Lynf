@@ -1,243 +1,152 @@
-import type { MatchParticipantSummary, MatchSummary } from '@lynf/shared';
+import type { MatchSummary, RiotIdLookup } from '@lynf/shared';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ChampionCatalogue } from '../../api/champion-catalogue';
-import { TEAM_POSITION_ORDER } from '../../constants/match-positions';
-import { formatNumber } from '../../utils/match-format';
-import ChampionPortrait from '../ui/champion-portrait';
-import DuelBand from './duel-band';
-
-const TEAM_PORTRAIT_SIZE = 28;
+import MatchDetailDuel from './match-detail-duel';
+import MatchDetailGeneral from './match-detail-general';
+import MatchDetailStuff from './match-detail-stuff';
 
 type MatchDetailsProps = {
     match: MatchSummary;
     version: string | undefined;
     catalogue: ChampionCatalogue | undefined;
     viewedPuuid: string;
+    lookup: RiotIdLookup;
 };
 
-/** Riot's own lane order, unrecognised or empty positions — Arena among them — last. */
-function sortByPosition(
-    participants: readonly MatchParticipantSummary[],
-): MatchParticipantSummary[] {
-    const rank = (participant: MatchParticipantSummary) => {
-        const index = TEAM_POSITION_ORDER.indexOf(participant.teamPosition);
-        return index === -1 ? TEAM_POSITION_ORDER.length : index;
-    };
-
-    return [...participants].sort((a, b) => rank(a) - rank(b));
-}
+const TABS = ['general', 'duel', 'stuff'] as const;
+type Tab = (typeof TABS)[number];
 
 /**
- * Every participant, grouped by `teamId`. The order within a group is whatever the
- * database returned — `match.repository.ts` has no `ORDER BY` on this query — and that
- * is fine: `TeamColumn` below always re-sorts a group with `sortByPosition` before
- * rendering it, so nothing here ever relies on the input order.
- */
-function groupByTeam(
-    participants: readonly MatchParticipantSummary[],
-): [number, MatchParticipantSummary[]][] {
-    const groups = new Map<number, MatchParticipantSummary[]>();
-
-    for (const participant of participants) {
-        const group = groups.get(participant.teamId);
-
-        if (group) {
-            group.push(participant);
-        } else {
-            groups.set(participant.teamId, [participant]);
-        }
-    }
-
-    return [...groups.entries()].sort(([a], [b]) => a - b);
-}
-
-function TeamRow({
-    participant,
-    isViewedPlayer,
-    won,
-    maxDamage,
-    version,
-    catalogue,
-    language,
-}: Readonly<{
-    participant: MatchParticipantSummary;
-    isViewedPlayer: boolean;
-    won: boolean;
-    maxDamage: number;
-    version: string | undefined;
-    catalogue: ChampionCatalogue | undefined;
-    language: string;
-}>) {
-    const { t } = useTranslation('summoner');
-    const damageShare =
-        maxDamage > 0 ? (participant.totalDamageDealtToChampions / maxDamage) * 100 : 0;
-
-    return (
-        <li
-            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${
-                isViewedPlayer ? 'bg-surface-raised' : ''
-            }`}
-        >
-            <ChampionPortrait
-                championId={participant.championId}
-                size={TEAM_PORTRAIT_SIZE}
-                version={version}
-                catalogue={catalogue}
-            />
-
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex items-center gap-1 truncate text-xs font-medium text-ink">
-                    <span className="truncate">
-                        {participant.riotIdGameName}#{participant.riotIdTagline}
-                    </span>
-                    {isViewedPlayer && (
-                        <span className="shrink-0 text-[10px] font-semibold text-gold uppercase">
-                            {t('profile.matches.detail.teams.you')}
-                        </span>
-                    )}
-                </span>
-                <span className="text-[11px] text-ink-muted">
-                    {t('profile.matches.kda', {
-                        kills: participant.kills,
-                        deaths: participant.deaths,
-                        assists: participant.assists,
-                    })}
-                </span>
-            </div>
-
-            <div className="flex w-24 shrink-0 flex-col items-end gap-0.5">
-                <span className="text-[11px] text-ink-muted">
-                    <span className="sr-only">{t('profile.matches.detail.teams.damage')}: </span>
-                    {formatNumber(participant.totalDamageDealtToChampions, language)}
-                </span>
-                <div className="h-1.5 w-full rounded-full bg-surface-raised" aria-hidden="true">
-                    <div
-                        className={`h-1.5 rounded-full ${won ? 'bg-win' : 'bg-loss'}`}
-                        style={{ width: `${damageShare}%` }}
-                    />
-                </div>
-            </div>
-        </li>
-    );
-}
-
-function TeamColumn({
-    teamId,
-    members,
-    viewedPuuid,
-    maxDamage,
-    version,
-    catalogue,
-    language,
-}: Readonly<{
-    teamId: number;
-    members: MatchParticipantSummary[];
-    viewedPuuid: string;
-    maxDamage: number;
-    version: string | undefined;
-    catalogue: ChampionCatalogue | undefined;
-    language: string;
-}>) {
-    const { t } = useTranslation('summoner');
-    const won = members.some((member) => member.win);
-
-    return (
-        <div className="flex flex-col gap-1">
-            <h4 className={`text-xs font-semibold uppercase ${won ? 'text-win' : 'text-loss'}`}>
-                {t(won ? 'profile.matches.result.win' : 'profile.matches.result.loss')}
-            </h4>
-            <ul className="flex flex-col gap-1" data-team-id={teamId}>
-                {sortByPosition(members).map((participant) => (
-                    <TeamRow
-                        key={participant.puuid}
-                        participant={participant}
-                        isViewedPlayer={participant.puuid === viewedPuuid}
-                        won={won}
-                        maxDamage={maxDamage}
-                        version={version}
-                        catalogue={catalogue}
-                        language={language}
-                    />
-                ))}
-            </ul>
-        </div>
-    );
-}
-
-/**
- * The two-team breakdown: every participant Riot reported, grouped by team, each with
- * champion, pseudo, score and a damage bar proportional to the best of the match, drawn
- * in that team's own colour — `win` for whichever side won, `loss` for the other — so
- * the table reads at a glance without reading either header. A roster short of ten — an
- * old match, an unusual queue — simply shows what it has; a mode with more than two
- * teams, Arena among them, shows one column per team instead of assuming exactly two.
- */
-function TeamsSection({
-    participants,
-    viewedPuuid,
-    version,
-    catalogue,
-    language,
-}: Readonly<{
-    participants: readonly MatchParticipantSummary[];
-    viewedPuuid: string;
-    version: string | undefined;
-    catalogue: ChampionCatalogue | undefined;
-    language: string;
-}>) {
-    const { t } = useTranslation('summoner');
-    const maxDamage = Math.max(0, ...participants.map((p) => p.totalDamageDealtToChampions));
-    const teams = groupByTeam(participants);
-
-    return (
-        <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-ink">
-                {t('profile.matches.detail.teams.heading')}
-            </h3>
-
-            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                {teams.map(([teamId, members]) => (
-                    <TeamColumn
-                        key={teamId}
-                        teamId={teamId}
-                        members={members}
-                        viewedPuuid={viewedPuuid}
-                        maxDamage={maxDamage}
-                        version={version}
-                        catalogue={catalogue}
-                        language={language}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
-
-/**
- * The disclosure panel inside a match card: the lane duel first, the full two-team
- * breakdown below it. Reads exactly what the match history tranche already stored —
- * `match.participants` — so opening a match never calls Riot.
+ * The disclosure panel inside a match card, as a real tab bar over three panels:
+ * General (the existing two-team breakdown — no new data, no call), Duel (the existing
+ * lane-duel band plus its minute-by-minute chart) and Stuff (runes, skill order, item
+ * order). Only one panel is ever mounted at a time, which is also what keeps Duel's and
+ * Stuff's own match-timeline fetch from firing before their tab is actually opened —
+ * see `useMatchTimeline`.
+ *
+ * Every tab is reachable with the arrow keys (`Home`/`End` jump to the first/last), the
+ * active tab is announced as such through `aria-selected`, and the visible panel is
+ * associated with it through `aria-controls`/`aria-labelledby` — the same disclosure
+ * behaviour the match card itself already had is untouched by any of this.
  */
 export default function MatchDetails({
     match,
     version,
     catalogue,
     viewedPuuid,
+    lookup,
 }: Readonly<MatchDetailsProps>) {
-    const { i18n } = useTranslation('summoner');
+    const { t, i18n } = useTranslation('summoner');
+    const [activeTab, setActiveTab] = useState<Tab>('general');
+    const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+    const baseId = `match-detail-${match.matchId}`;
+    const tabId = (tab: Tab) => `${baseId}-tab-${tab}`;
+    const panelId = (tab: Tab) => `${baseId}-panel-${tab}`;
+
+    const focusTab = (index: number) => {
+        const nextTab = TABS[index];
+        setActiveTab(nextTab);
+        tabRefs.current[index]?.focus();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+        const currentIndex = TABS.indexOf(activeTab);
+
+        switch (event.key) {
+            case 'ArrowRight':
+                event.preventDefault();
+                focusTab((currentIndex + 1) % TABS.length);
+                break;
+            case 'ArrowLeft':
+                event.preventDefault();
+                focusTab((currentIndex - 1 + TABS.length) % TABS.length);
+                break;
+            case 'Home':
+                event.preventDefault();
+                focusTab(0);
+                break;
+            case 'End':
+                event.preventDefault();
+                focusTab(TABS.length - 1);
+                break;
+            default:
+                break;
+        }
+    };
 
     return (
-        <div className="flex flex-col gap-5 border-t border-line pt-3">
-            <DuelBand player={match.player} opponent={match.opponent} language={i18n.language} />
+        <div className="flex flex-col gap-4 border-t border-line pt-3">
+            <div
+                role="tablist"
+                aria-label={t('profile.matches.detail.tabs.label')}
+                className="flex gap-1 border-b border-line"
+                onKeyDown={handleKeyDown}
+            >
+                {TABS.map((tab, index) => (
+                    <button
+                        key={tab}
+                        ref={(element) => {
+                            tabRefs.current[index] = element;
+                        }}
+                        type="button"
+                        role="tab"
+                        id={tabId(tab)}
+                        aria-selected={activeTab === tab}
+                        aria-controls={panelId(tab)}
+                        tabIndex={activeTab === tab ? 0 : -1}
+                        onClick={() => setActiveTab(tab)}
+                        className={`-mb-px border-b-2 px-3 py-1.5 text-xs font-semibold uppercase transition-colors ${
+                            activeTab === tab
+                                ? 'border-gold text-ink'
+                                : 'border-transparent text-ink-muted hover:text-ink'
+                        }`}
+                    >
+                        {t(`profile.matches.detail.tabs.${tab}`)}
+                    </button>
+                ))}
+            </div>
 
-            <TeamsSection
-                participants={match.participants}
-                viewedPuuid={viewedPuuid}
-                version={version}
-                catalogue={catalogue}
-                language={i18n.language}
-            />
+            {activeTab === 'general' && (
+                <div
+                    id={panelId('general')}
+                    role="tabpanel"
+                    aria-labelledby={tabId('general')}
+                    tabIndex={0}
+                >
+                    <MatchDetailGeneral
+                        participants={match.participants}
+                        viewedPuuid={viewedPuuid}
+                        version={version}
+                        catalogue={catalogue}
+                        language={i18n.language}
+                    />
+                </div>
+            )}
+
+            {activeTab === 'duel' && (
+                <div
+                    id={panelId('duel')}
+                    role="tabpanel"
+                    aria-labelledby={tabId('duel')}
+                    tabIndex={0}
+                >
+                    <MatchDetailDuel match={match} lookup={lookup} language={i18n.language} />
+                </div>
+            )}
+
+            {activeTab === 'stuff' && (
+                <div
+                    id={panelId('stuff')}
+                    role="tabpanel"
+                    aria-labelledby={tabId('stuff')}
+                    tabIndex={0}
+                >
+                    <MatchDetailStuff match={match} lookup={lookup} version={version} />
+                </div>
+            )}
         </div>
     );
 }

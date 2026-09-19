@@ -145,6 +145,7 @@ export default function SummonerPage() {
                         isPending={isMatchesPending}
                         error={matchesError}
                         viewedPuuid={data.puuid}
+                        lookup={lookup}
                     />
                 </>
             )}
