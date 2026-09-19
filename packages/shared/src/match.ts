@@ -7,6 +7,23 @@
 export const MATCH_HISTORY_LIMIT = 20;
 
 /**
+ * The runes a participant played, as numeric ids only: turning a perk id into its name
+ * and icon is the screen's job, the same split already made for `championId` and
+ * `items`. `primaryPerks`/`subPerks` keep Riot's own selection order within each tree.
+ */
+export type MatchParticipantRunes = {
+    primaryStyle: number;
+    primaryPerks: number[];
+    subStyle: number;
+    subPerks: number[];
+    statPerks: {
+        offense: number;
+        flex: number;
+        defense: number;
+    };
+};
+
+/**
  * One participant of a match, in every place the match detail needs one: the tracked
  * player, their lane opponent, or any of the other players shown in the two-team
  * breakdown.
@@ -16,7 +33,9 @@ export const MATCH_HISTORY_LIMIT = 20;
  * has seven entries, trinket included, in Riot's own slot order; an empty slot is `0`.
  * `teamPosition` is empty on some queues — arcade modes among them — and on matches old
  * enough to predate it; `riotIdGameName`/`riotIdTagline` are the name Riot reported for
- * this match, not a live lookup.
+ * this match, not a live lookup. `runes` is `null` for every match ingested before this
+ * field existed: a match is immutable, so those rows are never re-read from Riot just to
+ * backfill it, and never will be.
  */
 export type MatchParticipantSummary = {
     puuid: string;
@@ -33,6 +52,7 @@ export type MatchParticipantSummary = {
     goldEarned: number;
     totalDamageDealtToChampions: number;
     items: number[];
+    runes: MatchParticipantRunes | null;
 };
 
 /**
