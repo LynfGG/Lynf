@@ -5,3 +5,4 @@ export * from './summoner-resource-read';
 export * from './summoner-mastery';
 export * from './match';
 export * from './match-participant';
+export * from './match-timeline';

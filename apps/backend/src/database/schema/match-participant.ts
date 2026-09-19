@@ -2,6 +2,7 @@ import {
     boolean,
     foreignKey,
     integer,
+    jsonb,
     pgTable,
     primaryKey,
     text,
@@ -9,6 +10,24 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { matches } from './match';
+
+/**
+ * A participant's runes, mirroring `MatchParticipantRunes` in `@lynf/shared` field for
+ * field. Kept as a local type rather than importing the shared one: nothing else in
+ * this schema depends on `@lynf/shared`, and a jsonb column's shape is this table's
+ * concern, not the contract's.
+ */
+export type MatchParticipantRunesJson = {
+    primaryStyle: number;
+    primaryPerks: number[];
+    subStyle: number;
+    subPerks: number[];
+    statPerks: {
+        offense: number;
+        flex: number;
+        defense: number;
+    };
+};
 
 /**
  * One player's line in one finished match — ten rows per match on Summoner's Rift, more
@@ -45,6 +64,14 @@ export const matchParticipants = pgTable(
         items: integer('items').array().notNull(),
         riotIdGameName: text('riot_id_game_name').notNull(),
         riotIdTagline: text('riot_id_tagline').notNull(),
+        /**
+         * Nullable, and deliberately never backfilled: the matches already stored
+         * before this column existed were ingested without runes, a match is
+         * immutable, and it is never re-read from Riot just to fill a gap. To repopulate
+         * development data with runes, empty this table (or `matches`, which cascades
+         * to it) and let ingestion run again — never done automatically.
+         */
+        runes: jsonb('runes').$type<MatchParticipantRunesJson>(),
     },
     (table) => [
         primaryKey({ columns: [table.matchId, table.puuid] }),
