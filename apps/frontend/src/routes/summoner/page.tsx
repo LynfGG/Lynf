@@ -1,4 +1,5 @@
 import { EPlatformRegion, PLATFORM_REGIONS, RIOT_ID_LENGTH, type RiotIdLookup } from '@lynf/shared';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
@@ -10,6 +11,7 @@ import { useSummonerMasteries } from '../../hooks/use-summoner-masteries';
 import { useSummonerMatches } from '../../hooks/use-summoner-matches';
 import { useSummonerProfile } from '../../hooks/use-summoner-profile';
 import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
+import { addRecentSearch } from '../../utils/recent-searches';
 
 /**
  * A Riot ID travels in the URL as `gameName-tagLine`: that is how players copy it, and
@@ -94,6 +96,20 @@ export default function SummonerPage() {
         error: matchesError,
         refetch: refetchMatches,
     } = useSummonerMatches(lookup);
+
+    // Recorded here, once the profile has actually rendered, and never on form submit:
+    // a Riot ID that does not exist has nothing to do in a visitor's recent searches.
+    useEffect(() => {
+        if (!data) {
+            return;
+        }
+
+        addRecentSearch({
+            region: data.region,
+            gameName: data.gameName,
+            tagLine: data.tagLine,
+        });
+    }, [data]);
 
     if (!lookup) {
         return (

@@ -6,7 +6,12 @@
         "tagLineLabel": "Tag",
         "tagLinePlaceholder": "KR1",
         "regionLabel": "Region",
-        "submit": "Search"
+        "submit": "Search",
+        "recent": {
+            "title": "Recently viewed",
+            "remove": "Remove {{riotId}} from recent searches",
+            "clear": "Clear all"
+        }
     },
     "profile": {
         "level": "LV {{level, number}}",

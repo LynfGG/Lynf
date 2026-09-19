@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import RecentSearches from '../components/features/recent-searches';
 import Button from '../components/ui/button';
 import Field from '../components/ui/field';
 import Select from '../components/ui/select';
@@ -88,6 +89,8 @@ export default function HomePage() {
                     {t('search.submit')}
                 </Button>
             </form>
+
+            <RecentSearches />
         </section>
     );
 }
