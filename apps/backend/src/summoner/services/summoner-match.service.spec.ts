@@ -419,6 +419,52 @@ describe('SummonerMatchService', () => {
 
             expect(summary.opponent).toBeNull();
         });
+
+        it('carries every participant of the match, not just the player and their opponent', async () => {
+            const player = participantRow();
+            const opponent = participantRow({
+                puuid: OPPONENT_PUUID,
+                teamId: 200,
+                championId: 238,
+                win: false,
+            });
+            const teammate = participantRow({ puuid: 'p-3', teamId: 100, championId: 64 });
+            repository.findRecentByPuuid.mockResolvedValue([
+                { match: matchRow(), player } satisfies MatchWithPlayerRow,
+            ]);
+            repository.findParticipantsByMatchIds.mockResolvedValue([player, opponent, teammate]);
+
+            const [summary] = await service.findByRiotId(LOOKUP);
+
+            expect(summary.participants).toHaveLength(3);
+            expect(summary.participants).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ puuid: PUUID, championId: 103 }),
+                    expect.objectContaining({ puuid: OPPONENT_PUUID, championId: 238 }),
+                    expect.objectContaining({ puuid: 'p-3', championId: 64 }),
+                ]),
+            );
+        });
+
+        it('keeps every participant even when the roster is not ten players, arena among them', async () => {
+            const player = participantRow({ teamPosition: '' });
+            const others = Array.from({ length: 17 }, (_unused, index) =>
+                participantRow({
+                    puuid: `arena-${index}`,
+                    teamId: 100 + index,
+                    teamPosition: '',
+                }),
+            );
+            repository.findRecentByPuuid.mockResolvedValue([
+                { match: matchRow(), player } satisfies MatchWithPlayerRow,
+            ]);
+            repository.findParticipantsByMatchIds.mockResolvedValue([player, ...others]);
+
+            const [summary] = await service.findByRiotId(LOOKUP);
+
+            expect(summary.participants).toHaveLength(18);
+            expect(summary.opponent).toBeNull();
+        });
     });
 
     describe('falling back to what is stored when Riot cannot refresh the list', () => {

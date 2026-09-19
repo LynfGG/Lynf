@@ -32,4 +32,12 @@ export class SummonerMatchDto implements MatchSummary {
             'The player who held the same position on the other team, or null when none could be identified — some queues and older matches never carry a position.',
     })
     opponent!: MatchParticipantSummaryDto | null;
+
+    @ApiProperty({
+        type: MatchParticipantSummaryDto,
+        isArray: true,
+        description:
+            "Every participant of the match, ten on Summoner's Rift and a different count on some other modes. This is what the expanded match detail is built from; it costs no extra Riot call, since match-v5 already reports everyone and match history already stored them.",
+    })
+    participants!: MatchParticipantSummaryDto[];
 }

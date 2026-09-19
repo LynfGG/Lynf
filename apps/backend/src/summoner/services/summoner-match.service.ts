@@ -196,11 +196,20 @@ function toSummary(
         endedAt: match.endedAt.toISOString(),
         player: toParticipantSummary(player),
         opponent: opponent ? toParticipantSummary(opponent) : null,
+        // Every participant Riot reported for this match, the tracked player and their
+        // opponent included: this is what the expanded two-team detail is built from.
+        // It is already in storage — no extra Riot call follows from returning it.
+        participants: participants.map(toParticipantSummary),
     };
 }
 
 function toParticipantSummary(row: MatchParticipantRow): MatchParticipantSummary {
     return {
+        puuid: row.puuid,
+        riotIdGameName: row.riotIdGameName,
+        riotIdTagline: row.riotIdTagline,
+        teamId: row.teamId,
+        teamPosition: row.teamPosition,
         championId: row.championId,
         win: row.win,
         kills: row.kills,
@@ -208,6 +217,7 @@ function toParticipantSummary(row: MatchParticipantRow): MatchParticipantSummary
         assists: row.assists,
         creepScore: row.creepScore,
         goldEarned: row.goldEarned,
+        totalDamageDealtToChampions: row.totalDamageDealtToChampions,
         items: row.items,
     };
 }
