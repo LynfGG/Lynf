@@ -38,7 +38,7 @@ export class MatchTimelineSkillLevelUpDto implements MatchTimelineSkillLevelUp {
     @ApiProperty({ description: 'Milliseconds into the game.', example: 13_976 })
     timestampMs!: number;
 
-    @ApiProperty({ description: '`0`–`3`: Q, W, E, R.', example: 3 })
+    @ApiProperty({ description: '`1`–`4`: Q, W, E, R.', example: 4 })
     skillSlot!: number;
 }
 

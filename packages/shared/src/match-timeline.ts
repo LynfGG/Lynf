@@ -31,7 +31,7 @@ export type MatchTimelineFrame = {
 export type MatchTimelineSkillLevelUp = {
     puuid: string;
     timestampMs: number;
-    /** `0`–`3`: Q, W, E, R, in Riot's own numbering. */
+    /** `1`–`4`: Q, W, E, R. Riot numbers the slots from one, never from zero. */
     skillSlot: number;
 };
 

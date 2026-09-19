@@ -44,7 +44,7 @@ function timeline(id: string, overrides: Partial<NewMatchTimelineRow> = {}): New
     return {
         matchId: id,
         frames: [{ puuid: 'p-1', minute: 0, totalGold: 500, creepScore: 0, xp: 0, level: 1 }],
-        skillLevelUps: [{ puuid: 'p-1', timestampMs: 60_000, skillSlot: 0 }],
+        skillLevelUps: [{ puuid: 'p-1', timestampMs: 60_000, skillSlot: 1 }],
         itemEvents: [{ puuid: 'p-1', timestampMs: 90_000, itemId: 1055, action: 'PURCHASED' }],
         kills: [
             {
@@ -96,7 +96,7 @@ describeWithDatabase('MatchTimelineRepository', () => {
             expect(stored).toMatchObject({
                 matchId: id,
                 frames: [{ puuid: 'p-1', minute: 0, totalGold: 500 }],
-                skillLevelUps: [{ puuid: 'p-1', skillSlot: 0 }],
+                skillLevelUps: [{ puuid: 'p-1', skillSlot: 1 }],
                 itemEvents: [{ puuid: 'p-1', itemId: 1055, action: 'PURCHASED' }],
                 kills: [{ killerPuuid: 'p-1', victimPuuid: 'p-2' }],
             });

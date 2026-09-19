@@ -118,7 +118,7 @@ describe('MatchTimelineService', () => {
         it('returns the four extracted families exactly as stored', async () => {
             timelineRepository.findByMatchId.mockResolvedValue(
                 timelineRow({
-                    skillLevelUps: [{ puuid: PUUID, timestampMs: 1_000, skillSlot: 0 }],
+                    skillLevelUps: [{ puuid: PUUID, timestampMs: 1_000, skillSlot: 1 }],
                     itemEvents: [
                         { puuid: PUUID, timestampMs: 2_000, itemId: 1055, action: 'PURCHASED' },
                     ],
@@ -136,7 +136,7 @@ describe('MatchTimelineService', () => {
             const timeline = await service.findByMatchId(LOOKUP, MATCH_ID);
 
             expect(timeline.skillLevelUps).toEqual([
-                { puuid: PUUID, timestampMs: 1_000, skillSlot: 0 },
+                { puuid: PUUID, timestampMs: 1_000, skillSlot: 1 },
             ]);
             expect(timeline.itemEvents).toEqual([
                 { puuid: PUUID, timestampMs: 2_000, itemId: 1055, action: 'PURCHASED' },
