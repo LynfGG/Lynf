@@ -32,6 +32,31 @@
             "unknownChampion": "Champion {{id, number}}",
             "level": "Mastery {{level, number}}",
             "points": "{{points, number}} pts"
+        },
+        "matches": {
+            "loading": "Looking up match history…",
+            "empty": "No matches found.",
+            "kda": "{{kills, number}} / {{deaths, number}} / {{assists, number}}",
+            "creepScore": "{{count, number}} CS",
+            "creepScoreDiff": "{{value}} CS",
+            "goldDiff": "{{value}} gold",
+            "vs": "vs",
+            "viewDetails": "View match details",
+            "detailsComingSoon": "Match details are coming soon",
+            "result": {
+                "win": "Victory",
+                "loss": "Defeat"
+            },
+            "queue": {
+                "soloDuo": "Ranked Solo/Duo",
+                "flex": "Ranked Flex",
+                "aram": "ARAM",
+                "normalDraft": "Normal (Draft)",
+                "normalBlind": "Normal (Blind)",
+                "clash": "Clash",
+                "urf": "URF",
+                "unknown": "Queue {{id, number}}"
+            }
         }
     },
     "errors": {

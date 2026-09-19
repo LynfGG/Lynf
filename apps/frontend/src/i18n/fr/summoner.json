@@ -32,6 +32,31 @@
             "unknownChampion": "Champion {{id, number}}",
             "level": "Maîtrise {{level, number}}",
             "points": "{{points, number}} pts"
+        },
+        "matches": {
+            "loading": "Recherche de l'historique des parties…",
+            "empty": "Aucune partie trouvée.",
+            "kda": "{{kills, number}} / {{deaths, number}} / {{assists, number}}",
+            "creepScore": "{{count, number}} CS",
+            "creepScoreDiff": "{{value}} CS",
+            "goldDiff": "{{value}} or",
+            "vs": "vs",
+            "viewDetails": "Voir le détail de la partie",
+            "detailsComingSoon": "Le détail de la partie arrive bientôt",
+            "result": {
+                "win": "Victoire",
+                "loss": "Défaite"
+            },
+            "queue": {
+                "soloDuo": "Classée Solo/Duo",
+                "flex": "Classée Flexible",
+                "aram": "ARAM",
+                "normalDraft": "Normale (tirage)",
+                "normalBlind": "Normale (aveugle)",
+                "clash": "Clash",
+                "urf": "URF",
+                "unknown": "File {{id, number}}"
+            }
         }
     },
     "errors": {

@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
 import ChampionMasteryBand from '../../components/features/champion-mastery-band';
+import MatchList from '../../components/features/match-list';
 import SummonerHero from '../../components/features/summoner-hero';
 import { useSummonerErrorMessage } from '../../hooks/use-summoner-error-message';
 import { useSummonerMasteries } from '../../hooks/use-summoner-masteries';
+import { useSummonerMatches } from '../../hooks/use-summoner-matches';
 import { useSummonerProfile } from '../../hooks/use-summoner-profile';
 import { useSummonerRanks } from '../../hooks/use-summoner-ranks';
 
@@ -85,6 +87,13 @@ export default function SummonerPage() {
         error: masteriesError,
         refetch: refetchMasteries,
     } = useSummonerMasteries(lookup);
+    const {
+        data: matches,
+        isPending: isMatchesPending,
+        isFetching: isMatchesFetching,
+        error: matchesError,
+        refetch: refetchMatches,
+    } = useSummonerMatches(lookup);
 
     if (!lookup) {
         return (
@@ -98,6 +107,7 @@ export default function SummonerPage() {
         void refetchProfile();
         void refetchRanks();
         void refetchMasteries();
+        void refetchMatches();
     };
 
     return (
@@ -118,13 +128,24 @@ export default function SummonerPage() {
                         isRanksPending={isRanksPending}
                         ranksError={ranksError}
                         onRefresh={handleRefresh}
-                        isRefreshing={isFetching || isRanksFetching || isMasteriesFetching}
+                        isRefreshing={
+                            isFetching ||
+                            isRanksFetching ||
+                            isMasteriesFetching ||
+                            isMatchesFetching
+                        }
                     />
 
                     <ChampionMasteryBand
                         masteries={masteries}
                         isPending={isMasteriesPending}
                         error={masteriesError}
+                    />
+
+                    <MatchList
+                        matches={matches}
+                        isPending={isMatchesPending}
+                        error={matchesError}
                     />
                 </>
             )}
