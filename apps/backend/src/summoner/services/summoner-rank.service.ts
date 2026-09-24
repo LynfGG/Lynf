@@ -1,58 +1,31 @@
-import type { EPlatformRegion, RiotIdLookup, SummonerProfile } from '@lynf/shared';
-import { HttpException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { EPlatformRegion, RiotIdLookup, SummonerProfile, SummonerRank } from '@lynf/shared';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
 import type { SummonerRow } from '../../database/schema/index';
 import { RiotExternal } from '../../riot/externals/riot.external';
 import { SummonerRepository } from '../repositories/summoner.repository';
+import { SummonerService } from './summoner.service';
 
-/**
- * Business logic for player profiles.
- *
- * Two decisions live here. A stored profile is served as-is while it is fresh, and Riot
- * is only asked again once it is not. And when Riot cannot answer — rejected key, rate
- * limit, outage — a stored profile is served anyway, whatever its age: a development key
- * expires every 24 hours and rate limits are tight, so a profile page must never depend
- * on a Riot call succeeding right now.
- */
 @Injectable()
-export class SummonerService {
-    private readonly logger = new Logger(SummonerService.name);
+export class SummonerRankService {
+    private readonly logger = new Logger(SummonerRankService.name);
 
     constructor(
+        private readonly summonerService: SummonerService,
         private readonly summonerRepository: SummonerRepository,
         private readonly riotExternal: RiotExternal,
         @Inject(ENVIRONMENT) private readonly environment: Environment,
     ) {}
 
-    async findByRiotId(lookup: RiotIdLookup): Promise<SummonerProfile> {
-        const stored = await this.summonerRepository.findByRiotId(lookup);
-
-        if (stored && this.isFresh(stored)) {
-            return this.toProfile(stored);
-        }
-
-        try {
-            return await this.refresh(lookup);
-        } catch (error) {
-            // Nothing to fall back on; or Riot no longer knows this Riot ID, and an old
-            // profile would show a player who is gone; or the failure is not Riot's at all
-            // (a database error), which must not be hidden.
-            if (
-                !stored ||
-                !(error instanceof HttpException) ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-
-            this.logger.warn(
-                `Serving the stored profile of ${stored.gameName}#${stored.tagLine} on ${stored.region}: Riot could not refresh it (${error.getStatus()}).`,
-            );
-
-            return this.toProfile(stored);
-        }
+    async findByRiotId(lookup: RiotIdLookup): Promise<SummonerRank> {
+        const profile = await this.summonerService.resolvePlayer(lookup);
+        const leagueEntries = await this.riotExternal.getLeagueEntriesByPuid(
+            profile.puuid,
+            lookup.region,
+        );
+        return leagueEntries;
     }
 
     private async refresh(lookup: RiotIdLookup) {
@@ -93,10 +66,5 @@ export class SummonerService {
             summonerLevel: row.summonerLevel,
             updatedAt: row.updatedAt.toISOString(),
         };
-    }
-
-    async resolvePlayer(lookup: RiotIdLookup): Promise<SummonerProfile> {
-        const profile = await this.findByRiotId(lookup);
-        return profile;
     }
 }

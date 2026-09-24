@@ -12,7 +12,11 @@ import type { EPlatformRegion, RiotIdLookup } from '@lynf/shared';
 
 import { ENVIRONMENT } from '../../config/config.module';
 import type { Environment } from '../../config/environment';
-import type { RiotAccountResponse, RiotSummonerResponse } from '../types/riot-responses';
+import type {
+    RiotAccountResponse,
+    RiotLeagueEntriesResponse,
+    RiotSummonerResponse,
+} from '../types/riot-responses';
 import { accountClusterHost, platformHost } from '../utils/riot-routing.utils';
 
 /** Past this, a Riot call is abandoned: a hanging request would otherwise hold the page for minutes. */
@@ -42,6 +46,14 @@ export class RiotExternal {
             `${accountClusterHost(region)}${path}`,
             `No player named ${gameName}#${tagLine} exists.`,
         );
+    }
+
+    async getLeagueEntriesByPuid(
+        puuid: string,
+        region: EPlatformRegion,
+    ): Promise<RiotLeagueEntriesResponse> {
+        const path = `/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
+        return this.request<RiotLeagueEntriesResponse>(`${platformHost(region)}${path}`, '');
     }
 
     /** Reads the League profile an account has on one platform. */

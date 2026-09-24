@@ -12,3 +12,12 @@ export type RiotSummonerResponse = {
     summonerLevel: number;
     revisionDate: number;
 };
+
+export type RiotLeagueEntriesResponse = {
+    queueType: string;
+    tier: string;
+    rank: string;
+    leaguePoints: number;
+    wins: number;
+    losses: number;
+};

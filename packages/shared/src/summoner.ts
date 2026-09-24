@@ -55,3 +55,12 @@ export type SummonerProfile = {
     /** When this profile was last refreshed from Riot, as an ISO 8601 string. */
     updatedAt: string;
 };
+
+export type SummonerRank = {
+    queueType: string;
+    tier: string;
+    rank: string;
+    leaguePoints: number;
+    wins: number;
+    losses: number;
+};
