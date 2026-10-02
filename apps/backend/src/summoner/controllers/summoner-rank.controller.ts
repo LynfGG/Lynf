@@ -8,7 +8,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 @Controller('summoners')
 export class SummonerRankController {
     constructor(private readonly summonerRankService: SummonerRankService) {}
-    @Get(':region/:gameName/:tagLine/:rank')
+    @Get(':region/:gameName/:tagLine/rank')
     @ApiOperation({
         summary: "Look a player's rank up by their Riot ID.",
         description:
